@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: network-visualizer-config
+  namespace: network-visualizer
+data:
+  # Backend configuration
+  NODE_ENV: "production"
+  PORT: "3001"
+  ES_INDEX_PATTERN: "zeek-*"
+  DATA_WINDOW_HOURS: "24"
+  REFRESH_INTERVAL_SECONDS: "30"
+  DB_PATH: "/app/data/whitelist.db"
+
+  # Frontend configuration (injected as env vars during build)
+  REACT_APP_REFRESH_INTERVAL: "30000"

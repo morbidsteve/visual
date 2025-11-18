@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: network-visualizer
+  labels:
+    app: network-visualizer
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: network-visualizer
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: network-visualizer
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: network-visualizer-frontend:latest  # Update with your registry
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: network-visualizer
+  labels:
+    app: network-visualizer
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: network-visualizer
+    component: frontend

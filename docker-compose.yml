@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: network-visualizer-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - ES_NODE=${ES_NODE:-https://elasticsearch:9200}
+      - ES_USERNAME=${ES_USERNAME:-elastic}
+      - ES_PASSWORD=${ES_PASSWORD:-changeme}
+      - ES_INDEX_PATTERN=${ES_INDEX_PATTERN:-zeek-*}
+      - DATA_WINDOW_HOURS=${DATA_WINDOW_HOURS:-24}
+      - DB_PATH=/app/data/whitelist.db
+    volumes:
+      - backend-data:/app/data
+    networks:
+      - network-viz
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: network-visualizer-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - network-viz
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  backend-data:
+    driver: local
+
+networks:
+  network-viz:
+    driver: bridge

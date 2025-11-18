@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: network-visualizer
+  labels:
+    app: network-visualizer
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: network-visualizer
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: network-visualizer
+        component: backend
+    spec:
+      containers:
+      - name: backend
+        image: network-visualizer-backend:latest  # Update with your registry
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: network-visualizer-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: network-visualizer-config
+              key: PORT
+        - name: ES_INDEX_PATTERN
+          valueFrom:
+            configMapKeyRef:
+              name: network-visualizer-config
+              key: ES_INDEX_PATTERN
+        - name: DATA_WINDOW_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: network-visualizer-config
+              key: DATA_WINDOW_HOURS
+        - name: DB_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: network-visualizer-config
+              key: DB_PATH
+        - name: ES_NODE
+          valueFrom:
+            secretKeyRef:
+              name: network-visualizer-secrets
+              key: ES_NODE
+        - name: ES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: network-visualizer-secrets
+              key: ES_USERNAME
+        - name: ES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: network-visualizer-secrets
+              key: ES_PASSWORD
+        volumeMounts:
+        - name: backend-data
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 40
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: backend-data
+        persistentVolumeClaim:
+          claimName: backend-data-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: network-visualizer
+  labels:
+    app: network-visualizer
+    component: backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: http
+  selector:
+    app: network-visualizer
+    component: backend

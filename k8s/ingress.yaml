@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: network-visualizer-ingress
+  namespace: network-visualizer
+  labels:
+    app: network-visualizer
+  annotations:
+    # Nginx ingress annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # For cert-manager (optional - uncomment and configure)
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+    # Rate limiting (optional)
+    # nginx.ingress.kubernetes.io/limit-rps: "10"
+
+    # CORS (if needed)
+    # nginx.ingress.kubernetes.io/enable-cors: "true"
+    # nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+spec:
+  ingressClassName: nginx  # or your ingress class
+  rules:
+  - host: network-visualizer.example.com  # Change to your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+  # Uncomment for TLS (requires cert-manager or manual cert creation)
+  # tls:
+  # - hosts:
+  #   - network-visualizer.example.com
+  #   secretName: network-visualizer-tls
