@@ -321,6 +321,373 @@ class ElasticsearchService {
       throw error;
     }
   }
+
+  /**
+   * Get individual connections (not aggregated)
+   * Returns raw connection documents from Elasticsearch
+   */
+  async getIndividualConnections(filters = {}) {
+    const { timeRange, sourceIp, destIp, subnet, minBytes, protocol, destPort, service, connState, limit = 10000 } = filters;
+
+    const must = [];
+
+    // Time range filter
+    const hoursAgo = timeRange || this.dataWindowHours;
+    must.push({
+      range: {
+        '@timestamp': {
+          gte: `now-${hoursAgo}h`,
+          lte: 'now'
+        }
+      }
+    });
+
+    // IP filters
+    if (sourceIp) {
+      must.push({ term: { 'id.orig_h': sourceIp } });
+    }
+    if (destIp) {
+      must.push({ term: { 'id.resp_h': destIp } });
+    }
+    if (subnet) {
+      must.push({
+        bool: {
+          should: [
+            { prefix: { 'id.orig_h': subnet } },
+            { prefix: { 'id.resp_h': subnet } }
+          ]
+        }
+      });
+    }
+
+    // Traffic volume filter
+    if (minBytes) {
+      must.push({
+        range: {
+          'orig_bytes': { gte: minBytes }
+        }
+      });
+    }
+
+    // Protocol filter
+    if (protocol) {
+      must.push({ term: { 'proto': protocol } });
+    }
+
+    // Port filter
+    if (destPort) {
+      must.push({ term: { 'id.resp_p': destPort } });
+    }
+
+    // Service filter
+    if (service) {
+      must.push({ term: { 'service': service } });
+    }
+
+    // Connection state filter
+    if (connState) {
+      must.push({ term: { 'conn_state': connState } });
+    }
+
+    try {
+      const response = await esClient.search({
+        index: this.indexPattern,
+        size: limit,
+        body: {
+          query: {
+            bool: { must }
+          },
+          sort: [{ '@timestamp': 'desc' }]
+        }
+      });
+
+      const connections = response.hits.hits.map(hit => ({
+        id: hit._id,
+        timestamp: hit._source['@timestamp'],
+        sourceIp: hit._source.id?.orig_h,
+        sourcePort: hit._source.id?.orig_p,
+        destIp: hit._source.id?.resp_h,
+        destPort: hit._source.id?.resp_p,
+        protocol: hit._source.proto,
+        service: hit._source.service,
+        duration: hit._source.duration,
+        origBytes: hit._source.orig_bytes || 0,
+        respBytes: hit._source.resp_bytes || 0,
+        origPackets: hit._source.orig_pkts || 0,
+        respPackets: hit._source.resp_pkts || 0,
+        connState: hit._source.conn_state,
+        localOrig: hit._source.local_orig,
+        localResp: hit._source.local_resp,
+        missedBytes: hit._source.missed_bytes || 0,
+        history: hit._source.history,
+        raw: hit._source
+      }));
+
+      // Build nodes from individual connections
+      const nodes = new Map();
+      connections.forEach(conn => {
+        // Add source node
+        if (!nodes.has(conn.sourceIp)) {
+          nodes.set(conn.sourceIp, {
+            id: conn.sourceIp,
+            ip: conn.sourceIp,
+            type: this.classifyNode(conn.sourceIp),
+            subnet: this.getSubnet(conn.sourceIp),
+            isInternal: this.isInternalIp(conn.sourceIp),
+            totalBytesSent: 0,
+            totalBytesReceived: 0,
+            connections: 0
+          });
+        }
+        const sourceNode = nodes.get(conn.sourceIp);
+        sourceNode.totalBytesSent += conn.origBytes;
+        sourceNode.connections += 1;
+
+        // Add destination node
+        if (!nodes.has(conn.destIp)) {
+          nodes.set(conn.destIp, {
+            id: conn.destIp,
+            ip: conn.destIp,
+            type: this.classifyNode(conn.destIp, conn.destPort, [conn.service]),
+            subnet: this.getSubnet(conn.destIp),
+            isInternal: this.isInternalIp(conn.destIp),
+            totalBytesSent: 0,
+            totalBytesReceived: 0,
+            connections: 0
+          });
+        }
+        const destNode = nodes.get(conn.destIp);
+        destNode.totalBytesReceived += conn.origBytes;
+        destNode.connections += 1;
+      });
+
+      return {
+        connections,
+        nodes: Array.from(nodes.values()),
+        total: response.hits.total.value,
+        stats: {
+          totalConnections: connections.length,
+          uniqueSources: new Set(connections.map(c => c.sourceIp)).size,
+          uniqueDestinations: new Set(connections.map(c => c.destIp)).size
+        }
+      };
+    } catch (error) {
+      console.error('Error getting individual connections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get baseline connection patterns for an IP or subnet
+   * This is used to detect anomalies in whitelisted entities
+   */
+  async getConnectionBaseline(ip, isSubnet = false, lookbackDays = 7) {
+    const must = [
+      {
+        range: {
+          '@timestamp': {
+            gte: `now-${lookbackDays}d`,
+            lte: 'now'
+          }
+        }
+      }
+    ];
+
+    if (isSubnet) {
+      must.push({
+        bool: {
+          should: [
+            { prefix: { 'id.orig_h': ip } },
+            { prefix: { 'id.resp_h': ip } }
+          ]
+        }
+      });
+    } else {
+      must.push({
+        bool: {
+          should: [
+            { term: { 'id.orig_h': ip } },
+            { term: { 'id.resp_h': ip } }
+          ]
+        }
+      });
+    }
+
+    try {
+      const response = await esClient.search({
+        index: this.indexPattern,
+        size: 0,
+        body: {
+          query: {
+            bool: { must }
+          },
+          aggs: {
+            // Common destination IPs
+            common_dests: {
+              terms: { field: 'id.resp_h', size: 100 }
+            },
+            // Common source IPs
+            common_sources: {
+              terms: { field: 'id.orig_h', size: 100 }
+            },
+            // Common ports
+            common_ports: {
+              terms: { field: 'id.resp_p', size: 100 }
+            },
+            // Common protocols
+            common_protocols: {
+              terms: { field: 'proto', size: 20 }
+            },
+            // Common services
+            common_services: {
+              terms: { field: 'service', size: 50 }
+            },
+            // Connection patterns (destination IP + port + protocol)
+            connection_patterns: {
+              composite: {
+                size: 500,
+                sources: [
+                  { dest_ip: { terms: { field: 'id.resp_h' } } },
+                  { dest_port: { terms: { field: 'id.resp_p' } } },
+                  { protocol: { terms: { field: 'proto' } } }
+                ]
+              },
+              aggs: {
+                conn_count: { value_count: { field: '_id' } },
+                avg_bytes: { avg: { field: 'orig_bytes' } }
+              }
+            }
+          }
+        }
+      });
+
+      // Build baseline profile
+      const baseline = {
+        ip,
+        isSubnet,
+        lookbackDays,
+        generatedAt: new Date().toISOString(),
+        commonDestinations: response.aggregations.common_dests.buckets.map(b => ({
+          ip: b.key,
+          count: b.doc_count
+        })),
+        commonSources: response.aggregations.common_sources.buckets.map(b => ({
+          ip: b.key,
+          count: b.doc_count
+        })),
+        commonPorts: response.aggregations.common_ports.buckets.map(b => ({
+          port: b.key,
+          count: b.doc_count
+        })),
+        commonProtocols: response.aggregations.common_protocols.buckets.map(b => ({
+          protocol: b.key,
+          count: b.doc_count
+        })),
+        commonServices: response.aggregations.common_services.buckets.map(b => ({
+          service: b.key,
+          count: b.doc_count
+        })),
+        connectionPatterns: response.aggregations.connection_patterns.buckets.map(b => ({
+          destIp: b.key.dest_ip,
+          destPort: b.key.dest_port,
+          protocol: b.key.protocol,
+          count: b.conn_count.value,
+          avgBytes: b.avg_bytes.value
+        }))
+      };
+
+      return baseline;
+    } catch (error) {
+      console.error('Error getting connection baseline:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Detect anomalous connections based on baseline
+   */
+  detectAnomalies(connection, baseline) {
+    const anomalies = [];
+
+    // Check if destination IP is in baseline
+    const destInBaseline = baseline.commonDestinations.some(d => d.ip === connection.destIp);
+    if (!destInBaseline) {
+      anomalies.push({
+        type: 'new_destination',
+        severity: 'medium',
+        message: `Connection to new destination: ${connection.destIp}`
+      });
+    }
+
+    // Check if port is in baseline
+    const portInBaseline = baseline.commonPorts.some(p => p.port === connection.destPort);
+    if (!portInBaseline) {
+      anomalies.push({
+        type: 'new_port',
+        severity: 'low',
+        message: `Connection to new port: ${connection.destPort}`
+      });
+    }
+
+    // Check if protocol is in baseline
+    const protocolInBaseline = baseline.commonProtocols.some(p => p.protocol === connection.protocol);
+    if (!protocolInBaseline) {
+      anomalies.push({
+        type: 'new_protocol',
+        severity: 'medium',
+        message: `New protocol used: ${connection.protocol}`
+      });
+    }
+
+    // Check if service is new
+    if (connection.service) {
+      const serviceInBaseline = baseline.commonServices.some(s => s.service === connection.service);
+      if (!serviceInBaseline) {
+        anomalies.push({
+          type: 'new_service',
+          severity: 'low',
+          message: `New service detected: ${connection.service}`
+        });
+      }
+    }
+
+    // Check if the exact connection pattern exists in baseline
+    const patternInBaseline = baseline.connectionPatterns.some(p =>
+      p.destIp === connection.destIp &&
+      p.destPort === connection.destPort &&
+      p.protocol === connection.protocol
+    );
+
+    if (!patternInBaseline) {
+      anomalies.push({
+        type: 'new_connection_pattern',
+        severity: 'high',
+        message: `New connection pattern: ${connection.destIp}:${connection.destPort}/${connection.protocol}`
+      });
+    }
+
+    // Check for unusual traffic volume (if pattern exists)
+    if (patternInBaseline) {
+      const pattern = baseline.connectionPatterns.find(p =>
+        p.destIp === connection.destIp &&
+        p.destPort === connection.destPort &&
+        p.protocol === connection.protocol
+      );
+
+      if (pattern && pattern.avgBytes > 0) {
+        const bytesRatio = connection.origBytes / pattern.avgBytes;
+        if (bytesRatio > 10) {
+          anomalies.push({
+            type: 'high_traffic_volume',
+            severity: 'medium',
+            message: `Unusually high traffic volume: ${connection.origBytes} bytes (avg: ${Math.round(pattern.avgBytes)})`
+          });
+        }
+      }
+    }
+
+    return anomalies;
+  }
 }
 
 module.exports = new ElasticsearchService();

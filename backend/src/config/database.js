@@ -31,6 +31,23 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_whitelist_value ON whitelist(value);
 `);
 
+// Initialize baseline table for whitelisted entities
+db.exec(`
+  CREATE TABLE IF NOT EXISTS baselines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    entity_value TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    baseline_data TEXT NOT NULL,
+    generated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    lookback_days INTEGER DEFAULT 7,
+    UNIQUE(entity_value, entity_type)
+  )
+`);
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_baselines_entity ON baselines(entity_value, entity_type);
+`);
+
 console.log('Database initialized at:', dbPath);
 
 module.exports = db;
