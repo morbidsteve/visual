@@ -8,6 +8,8 @@ require('dotenv').config();
 const { testConnection } = require('./config/elasticsearch');
 const networkRoutes = require('./routes/networkRoutes');
 const whitelistRoutes = require('./routes/whitelistRoutes');
+const hostRoutes = require('./routes/hostRoutes');
+const websocketService = require('./services/websocketService');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +30,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/network', networkRoutes);
 app.use('/api/whitelist', whitelistRoutes);
+app.use('/api/host', hostRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -54,16 +57,20 @@ const startServer = async () => {
       console.warn('WARNING: Elasticsearch connection failed. Server will start but data fetching will fail.');
     }
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`
 ╔════════════════════════════════════════════════════════╗
 ║   Network Visualizer Backend                          ║
 ║   Port: ${PORT}                                       ║
 ║   Environment: ${process.env.NODE_ENV || 'development'}                           ║
 ║   Elasticsearch: ${esConnected ? 'Connected ✓' : 'Disconnected ✗'}                     ║
+║   WebSocket: ws://localhost:${PORT}/ws                ║
 ╚════════════════════════════════════════════════════════╝
       `);
     });
+
+    // Initialize WebSocket service
+    websocketService.initialize(server);
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
@@ -75,10 +82,12 @@ startServer();
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
+  websocketService.shutdown();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log('SIGINT received, shutting down gracefully...');
+  websocketService.shutdown();
   process.exit(0);
 });
