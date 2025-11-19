@@ -24,6 +24,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ListAltIcon from '@mui/icons-material/ListAlt';
+import SettingsIcon from '@mui/icons-material/Settings';
+import SecurityIcon from '@mui/icons-material/Security';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NetworkGraph from './components/NetworkGraph';
 import EnhancedFilterPanel from './components/EnhancedFilterPanel';
@@ -36,9 +38,13 @@ import Dashboard from './components/Dashboard';
 import QuickFilters from './components/QuickFilters';
 import SavedFilters from './components/SavedFilters';
 import MemoryMonitor from './components/MemoryMonitor';
+import SettingsDialog from './components/SettingsDialog';
+import ThreatHuntingPresets from './components/ThreatHuntingPresets';
+import TimelineView from './components/TimelineView';
 import { useNetworkTopology, useNetworkConnections } from './hooks/useNetworkData';
 import { useWebSocket } from './hooks/useWebSocket';
 import type { NetworkNode, NetworkEdge, NetworkFilters } from './types/network';
+import type { AppSettings } from './components/SettingsDialog';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,13 +56,15 @@ const queryClient = new QueryClient({
 });
 
 const AppContent: React.FC = () => {
-  const [view, setView] = useState<'dashboard' | 'graph' | 'list'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'graph' | 'list' | 'timeline'>('dashboard');
   const [filters, setFilters] = useState<NetworkFilters>({ hideWhitelisted: false, limit: 10000 });
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<NetworkEdge | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerContent, setDrawerContent] = useState<'whitelist' | 'baseline'>('whitelist');
+  const [drawerContent, setDrawerContent] = useState<'whitelist' | 'baseline' | 'threats'>('whitelist');
   const [savedFiltersOpen, setSavedFiltersOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -146,9 +154,14 @@ const AppContent: React.FC = () => {
     setSnackbar({ open: true, message: 'Refreshing data...', severity: 'success' });
   };
 
-  const handleDrawerOpen = (content: 'whitelist' | 'baseline') => {
+  const handleDrawerOpen = (content: 'whitelist' | 'baseline' | 'threats') => {
     setDrawerContent(content);
     setDrawerOpen(true);
+  };
+
+  const handleSettingsSaved = (settings: AppSettings) => {
+    setAppSettings(settings);
+    setSnackbar({ open: true, message: 'Settings saved successfully', severity: 'success' });
   };
 
   return (
@@ -200,11 +213,19 @@ const AppContent: React.FC = () => {
               <ToggleButton value="list" sx={{ color: 'white', '&.Mui-selected': { backgroundColor: 'rgba(255,255,255,0.2)' } }}>
                 <Tooltip title="List View"><ListAltIcon /></Tooltip>
               </ToggleButton>
+              <ToggleButton value="timeline" sx={{ color: 'white', '&.Mui-selected': { backgroundColor: 'rgba(255,255,255,0.2)' } }}>
+                <Tooltip title="Timeline View"><TimelineIcon /></Tooltip>
+              </ToggleButton>
             </ToggleButtonGroup>
           </Box>
 
           {/* Actions */}
           <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title="Threat Hunting">
+              <IconButton color="inherit" onClick={() => handleDrawerOpen('threats')}>
+                <SecurityIcon />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Save Filter">
               <IconButton color="inherit" onClick={() => setSavedFiltersOpen(true)}>
                 <SaveIcon />
@@ -225,6 +246,11 @@ const AppContent: React.FC = () => {
                 <TimelineIcon />
               </IconButton>
             </Tooltip>
+            <Tooltip title="Settings">
+              <IconButton color="inherit" onClick={() => setSettingsOpen(true)}>
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Toolbar>
       </AppBar>
@@ -237,7 +263,7 @@ const AppContent: React.FC = () => {
       )}
 
       {/* Quick Filters */}
-      {view !== 'dashboard' && (
+      {view !== 'dashboard' && view !== 'timeline' && (
         <QuickFilters
           onFilterApply={setFilters}
           currentFilters={filters}
@@ -248,7 +274,7 @@ const AppContent: React.FC = () => {
       <Box sx={{ flex: 1, overflow: 'hidden' }}>
         <Grid container sx={{ height: '100%' }}>
           {/* Left Sidebar - Filters */}
-          {view !== 'dashboard' && (
+          {view !== 'dashboard' && view !== 'timeline' && (
             <Grid item xs={12} md={2.5} sx={{ height: '100%', borderRight: 1, borderColor: 'divider' }}>
               <EnhancedFilterPanel
                 filters={filters}
@@ -263,12 +289,17 @@ const AppContent: React.FC = () => {
           <Grid
             item
             xs={12}
-            md={view === 'dashboard' ? 12 : 7}
+            md={view === 'dashboard' || view === 'timeline' ? 12 : 7}
             sx={{ height: '100%' }}
           >
             {view === 'dashboard' ? (
               <Dashboard
                 data={data}
+                loading={isLoading}
+              />
+            ) : view === 'timeline' ? (
+              <TimelineView
+                connections={data?.connections || []}
                 loading={isLoading}
               />
             ) : view === 'graph' ? (
@@ -288,7 +319,7 @@ const AppContent: React.FC = () => {
           </Grid>
 
           {/* Right Sidebar - Details */}
-          {view !== 'dashboard' && (
+          {view !== 'dashboard' && view !== 'timeline' && (
             <Grid item xs={12} md={2.5} sx={{ height: '100%', borderLeft: 1, borderColor: 'divider' }}>
               <NodeDetails
                 node={selectedNode}
@@ -303,23 +334,28 @@ const AppContent: React.FC = () => {
         </Grid>
       </Box>
 
-      {/* Drawer for Whitelist/Baseline Management */}
+      {/* Drawer for Whitelist/Baseline/Threat Hunting */}
       <Drawer
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{ sx: { width: 500 } }}
+        PaperProps={{ sx: { width: drawerContent === 'threats' ? 700 : 500 } }}
       >
         <Tabs
           value={drawerContent}
           onChange={(_, value) => setDrawerContent(value)}
           variant="fullWidth"
         >
+          <Tab label="Threat Hunting" value="threats" icon={<SecurityIcon />} iconPosition="start" />
           <Tab label="Whitelist" value="whitelist" />
           <Tab label="Baselines" value="baseline" />
         </Tabs>
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
-          {drawerContent === 'whitelist' ? <WhitelistManager /> : <BaselineManager />}
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          {drawerContent === 'threats' && (
+            <ThreatHuntingPresets onFilterApply={setFilters} currentFilters={filters} />
+          )}
+          {drawerContent === 'whitelist' && <WhitelistManager />}
+          {drawerContent === 'baseline' && <BaselineManager />}
         </Box>
       </Drawer>
 
@@ -343,6 +379,13 @@ const AppContent: React.FC = () => {
       <MemoryMonitor
         connectionCount={connectionCount}
         onClearRequested={handleClearData}
+      />
+
+      {/* Settings Dialog */}
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onSettingsSaved={handleSettingsSaved}
       />
     </Box>
   );

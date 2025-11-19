@@ -55,9 +55,19 @@ export interface NetworkFilters {
   hideWhitelisted?: boolean;
   protocol?: string;
   destPort?: number;
+  minDestPort?: number;
+  maxDestPort?: number;
   service?: string;
   connState?: string;
   limit?: number;
+  minDuration?: number;
+  maxDuration?: number;
+  minOrigBytes?: number;
+  maxOrigBytes?: number;
+  minRespBytes?: number;
+  maxRespBytes?: number;
+  external?: boolean;
+  internal?: boolean;
 }
 
 export interface ConnectionDetail {
