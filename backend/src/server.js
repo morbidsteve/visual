@@ -9,6 +9,7 @@ const { testConnection } = require('./config/elasticsearch');
 const networkRoutes = require('./routes/networkRoutes');
 const whitelistRoutes = require('./routes/whitelistRoutes');
 const hostRoutes = require('./routes/hostRoutes');
+const largeScaleRoutes = require('./routes/largeScaleRoutes');
 const websocketService = require('./services/websocketService');
 
 const app = express();
@@ -31,6 +32,7 @@ app.get('/health', (req, res) => {
 app.use('/api/network', networkRoutes);
 app.use('/api/whitelist', whitelistRoutes);
 app.use('/api/host', hostRoutes);
+app.use('/api/large-scale', largeScaleRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

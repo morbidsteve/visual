@@ -34,6 +34,7 @@ import WhitelistManager from './components/WhitelistManager';
 import BaselineManager from './components/BaselineManager';
 import SearchBar from './components/SearchBar';
 import ConnectionListView from './components/ConnectionListView';
+import VirtualizedConnectionList from './components/VirtualizedConnectionList';
 import Dashboard from './components/Dashboard';
 import QuickFilters from './components/QuickFilters';
 import SavedFilters from './components/SavedFilters';
@@ -41,6 +42,7 @@ import MemoryMonitor from './components/MemoryMonitor';
 import SettingsDialog from './components/SettingsDialog';
 import ThreatHuntingPresets from './components/ThreatHuntingPresets';
 import TimelineView from './components/TimelineView';
+import AdvancedFilterBuilder from './components/AdvancedFilterBuilder';
 import { useNetworkTopology, useNetworkConnections } from './hooks/useNetworkData';
 import { useWebSocket } from './hooks/useWebSocket';
 import type { NetworkNode, NetworkEdge, NetworkFilters } from './types/network';
@@ -61,7 +63,8 @@ const AppContent: React.FC = () => {
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<NetworkEdge | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerContent, setDrawerContent] = useState<'whitelist' | 'baseline' | 'threats'>('whitelist');
+  const [drawerContent, setDrawerContent] = useState<'whitelist' | 'baseline' | 'threats' | 'advanced-filters'>('whitelist');
+  const [useVirtualizedList, setUseVirtualizedList] = useState(false);
   const [savedFiltersOpen, setSavedFiltersOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
@@ -154,7 +157,7 @@ const AppContent: React.FC = () => {
     setSnackbar({ open: true, message: 'Refreshing data...', severity: 'success' });
   };
 
-  const handleDrawerOpen = (content: 'whitelist' | 'baseline' | 'threats') => {
+  const handleDrawerOpen = (content: 'whitelist' | 'baseline' | 'threats' | 'advanced-filters') => {
     setDrawerContent(content);
     setDrawerOpen(true);
   };
@@ -311,10 +314,18 @@ const AppContent: React.FC = () => {
                 onEdgeSelect={handleEdgeSelect}
               />
             ) : (
-              <ConnectionListView
-                connections={data?.connections || []}
-                loading={isLoading}
-              />
+              // Auto-switch to virtualized list for large datasets (>10k connections)
+              (data?.connections?.length || 0) > 10000 || useVirtualizedList ? (
+                <VirtualizedConnectionList
+                  connections={data?.connections || []}
+                  loading={isLoading}
+                />
+              ) : (
+                <ConnectionListView
+                  connections={data?.connections || []}
+                  loading={isLoading}
+                />
+              )
             )}
           </Grid>
 
@@ -334,25 +345,30 @@ const AppContent: React.FC = () => {
         </Grid>
       </Box>
 
-      {/* Drawer for Whitelist/Baseline/Threat Hunting */}
+      {/* Drawer for Whitelist/Baseline/Threat Hunting/Advanced Filters */}
       <Drawer
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{ sx: { width: drawerContent === 'threats' ? 700 : 500 } }}
+        PaperProps={{ sx: { width: drawerContent === 'threats' || drawerContent === 'advanced-filters' ? 800 : 500 } }}
       >
         <Tabs
           value={drawerContent}
           onChange={(_, value) => setDrawerContent(value)}
-          variant="fullWidth"
+          variant="scrollable"
+          scrollButtons="auto"
         >
           <Tab label="Threat Hunting" value="threats" icon={<SecurityIcon />} iconPosition="start" />
+          <Tab label="Advanced Filters" value="advanced-filters" />
           <Tab label="Whitelist" value="whitelist" />
           <Tab label="Baselines" value="baseline" />
         </Tabs>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           {drawerContent === 'threats' && (
             <ThreatHuntingPresets onFilterApply={setFilters} currentFilters={filters} />
+          )}
+          {drawerContent === 'advanced-filters' && (
+            <AdvancedFilterBuilder onApplyFilters={setFilters} currentFilters={filters} />
           )}
           {drawerContent === 'whitelist' && <WhitelistManager />}
           {drawerContent === 'baseline' && <BaselineManager />}
