@@ -7,6 +7,8 @@ export interface NetworkNode {
   totalBytesSent: number;
   totalBytesReceived: number;
   connections: number;
+  isWhitelisted?: boolean;
+  hasBaseline?: boolean;
 }
 
 export interface NetworkEdge {
@@ -51,6 +53,11 @@ export interface NetworkFilters {
   subnet?: string;
   minBytes?: number;
   hideWhitelisted?: boolean;
+  protocol?: string;
+  destPort?: number;
+  service?: string;
+  connState?: string;
+  limit?: number;
 }
 
 export interface ConnectionDetail {
@@ -69,4 +76,77 @@ export interface ConnectionDetail {
   conn_state?: string;
   orig_pkts?: number;
   resp_pkts?: number;
+}
+
+export interface Connection {
+  id: string;
+  timestamp: string;
+  sourceIp: string;
+  sourcePort: number;
+  destIp: string;
+  destPort: number;
+  protocol: string;
+  service?: string;
+  duration?: number;
+  origBytes: number;
+  respBytes: number;
+  origPackets: number;
+  respPackets: number;
+  connState?: string;
+  localOrig?: boolean;
+  localResp?: boolean;
+  missedBytes?: number;
+  history?: string;
+  anomalies?: Anomaly[];
+  isAnomalous?: boolean;
+  raw?: any;
+}
+
+export interface Anomaly {
+  type: string;
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+}
+
+export interface ConnectionsResponse {
+  connections: Connection[];
+  nodes: NetworkNode[];
+  total: number;
+  stats: {
+    totalConnections: number;
+    uniqueSources: number;
+    uniqueDestinations: number;
+    whitelistedNodes?: number;
+    filteredConnections?: number;
+    anomalousConnections?: number;
+  };
+  anomalousConnections?: Connection[];
+}
+
+export interface Baseline {
+  id?: number;
+  entity_value: string;
+  entity_type: 'ip' | 'subnet';
+  baseline_data: BaselineData;
+  generated_at: string;
+  lookback_days: number;
+}
+
+export interface BaselineData {
+  ip: string;
+  isSubnet: boolean;
+  lookbackDays: number;
+  generatedAt: string;
+  commonDestinations: Array<{ ip: string; count: number }>;
+  commonSources: Array<{ ip: string; count: number }>;
+  commonPorts: Array<{ port: number; count: number }>;
+  commonProtocols: Array<{ protocol: string; count: number }>;
+  commonServices: Array<{ service: string; count: number }>;
+  connectionPatterns: Array<{
+    destIp: string;
+    destPort: number;
+    protocol: string;
+    count: number;
+    avgBytes: number;
+  }>;
 }

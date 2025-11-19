@@ -29,6 +29,15 @@ export const useNetworkSearch = (query: string, timeRange: number = 24) => {
   });
 };
 
+export const useNetworkConnections = (filters: NetworkFilters = {}) => {
+  return useQuery({
+    queryKey: ['network-connections', filters],
+    queryFn: () => networkApi.getConnections(filters),
+    refetchInterval: REFRESH_INTERVAL,
+    staleTime: REFRESH_INTERVAL - 5000
+  });
+};
+
 export const useWhitelist = (type?: string) => {
   return useQuery({
     queryKey: ['whitelist', type],
@@ -52,6 +61,7 @@ export const useAddToWhitelist = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whitelist'] });
       queryClient.invalidateQueries({ queryKey: ['network-topology'] });
+      queryClient.invalidateQueries({ queryKey: ['network-connections'] });
     }
   });
 };
@@ -64,6 +74,7 @@ export const useRemoveFromWhitelist = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whitelist'] });
       queryClient.invalidateQueries({ queryKey: ['network-topology'] });
+      queryClient.invalidateQueries({ queryKey: ['network-connections'] });
     }
   });
 };

@@ -1,5 +1,12 @@
 import axios from 'axios';
-import type { NetworkTopology, NetworkFilters, WhitelistEntry, ConnectionDetail } from '../types/network';
+import type {
+  NetworkTopology,
+  NetworkFilters,
+  WhitelistEntry,
+  ConnectionDetail,
+  ConnectionsResponse,
+  Baseline
+} from '../types/network';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -43,6 +50,59 @@ export const networkApi = {
   search: async (query: string, timeRange: number = 24): Promise<any[]> => {
     const response = await api.get(`/api/network/search?q=${encodeURIComponent(query)}&timeRange=${timeRange}`);
     return response.data;
+  },
+
+  getConnections: async (filters: NetworkFilters = {}): Promise<ConnectionsResponse> => {
+    const params = new URLSearchParams();
+
+    if (filters.timeRange) params.append('timeRange', filters.timeRange.toString());
+    if (filters.sourceIp) params.append('sourceIp', filters.sourceIp);
+    if (filters.destIp) params.append('destIp', filters.destIp);
+    if (filters.subnet) params.append('subnet', filters.subnet);
+    if (filters.minBytes) params.append('minBytes', filters.minBytes.toString());
+    if (filters.protocol) params.append('protocol', filters.protocol);
+    if (filters.destPort) params.append('destPort', filters.destPort.toString());
+    if (filters.service) params.append('service', filters.service);
+    if (filters.connState) params.append('connState', filters.connState);
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.hideWhitelisted !== undefined) {
+      params.append('hideWhitelisted', filters.hideWhitelisted.toString());
+    }
+
+    const response = await api.get<ConnectionsResponse>(`/api/network/connections?${params.toString()}`);
+    return response.data;
+  },
+
+  getBaseline: async (
+    ip: string,
+    isSubnet: boolean = false,
+    lookbackDays: number = 7,
+    regenerate: boolean = false
+  ): Promise<Baseline> => {
+    const params = new URLSearchParams();
+    params.append('isSubnet', isSubnet.toString());
+    params.append('lookbackDays', lookbackDays.toString());
+    params.append('regenerate', regenerate.toString());
+
+    const response = await api.get<Baseline>(`/api/network/baseline/${ip}?${params.toString()}`);
+    return response.data;
+  },
+
+  generateBaseline: async (
+    entityValue: string,
+    entityType: 'ip' | 'subnet',
+    lookbackDays: number = 7
+  ): Promise<Baseline> => {
+    const response = await api.post<{ success: boolean; baseline: Baseline }>('/api/network/baseline', {
+      entityValue,
+      entityType,
+      lookbackDays
+    });
+    return response.data.baseline;
+  },
+
+  deleteBaseline: async (entityValue: string, entityType: 'ip' | 'subnet'): Promise<void> => {
+    await api.delete(`/api/network/baseline/${entityValue}/${entityType}`);
   }
 };
 

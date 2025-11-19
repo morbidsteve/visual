@@ -9,24 +9,18 @@ import {
   IconButton,
   Tooltip,
   Alert,
-  Snackbar,
-  Tabs,
-  Tab
+  Snackbar
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
-import TimelineIcon from '@mui/icons-material/Timeline';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NetworkGraph from './components/NetworkGraph';
-import EnhancedFilterPanel from './components/EnhancedFilterPanel';
+import FilterPanel from './components/FilterPanel';
 import NodeDetails from './components/NodeDetails';
 import WhitelistManager from './components/WhitelistManager';
-import BaselineManager from './components/BaselineManager';
 import SearchBar from './components/SearchBar';
-import ConnectionListView from './components/ConnectionListView';
-import ViewToggle from './components/ViewToggle';
-import { useNetworkTopology, useNetworkConnections } from './hooks/useNetworkData';
+import { useNetworkTopology } from './hooks/useNetworkData';
 import type { NetworkNode, NetworkEdge, NetworkFilters } from './types/network';
 
 const queryClient = new QueryClient({
@@ -39,24 +33,17 @@ const queryClient = new QueryClient({
 });
 
 const AppContent: React.FC = () => {
-  const [view, setView] = useState<'graph' | 'list'>('graph');
-  const [filters, setFilters] = useState<NetworkFilters>({ hideWhitelisted: false, limit: 10000 });
+  const [filters, setFilters] = useState<NetworkFilters>({ hideWhitelisted: false });
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<NetworkEdge | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerContent, setDrawerContent] = useState<'whitelist' | 'baseline'>('whitelist');
+  const [whitelistDrawerOpen, setWhitelistDrawerOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success'
   });
 
-  // Fetch data based on view
-  const graphData = useNetworkTopology(filters);
-  const connectionData = useNetworkConnections(filters);
-
-  // Use appropriate data based on view
-  const { data, isLoading, isError, error, refetch } = view === 'graph' ? graphData : connectionData;
+  const { data, isLoading, isError, error, refetch } = useNetworkTopology(filters);
 
   const handleNodeSelect = (node: NetworkNode | null) => {
     setSelectedNode(node);
@@ -70,12 +57,7 @@ const AppContent: React.FC = () => {
 
   const handleRefresh = () => {
     refetch();
-    setSnackbar({ open: true, message: 'Refreshing data...', severity: 'success' });
-  };
-
-  const handleDrawerOpen = (content: 'whitelist' | 'baseline') => {
-    setDrawerContent(content);
-    setDrawerOpen(true);
+    setSnackbar({ open: true, message: 'Refreshing network topology...', severity: 'success' });
   };
 
   return (
@@ -93,11 +75,6 @@ const AppContent: React.FC = () => {
             <SearchBar />
           </Box>
 
-          {/* View Toggle */}
-          <Box sx={{ mx: 2 }}>
-            <ViewToggle view={view} onChange={setView} />
-          </Box>
-
           {/* Actions */}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Refresh">
@@ -106,13 +83,8 @@ const AppContent: React.FC = () => {
               </IconButton>
             </Tooltip>
             <Tooltip title="Manage Whitelist">
-              <IconButton color="inherit" onClick={() => handleDrawerOpen('whitelist')}>
+              <IconButton color="inherit" onClick={() => setWhitelistDrawerOpen(true)}>
                 <PlaylistAddCheckIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Manage Baselines">
-              <IconButton color="inherit" onClick={() => handleDrawerOpen('baseline')}>
-                <TimelineIcon />
               </IconButton>
             </Tooltip>
           </Box>
@@ -131,30 +103,22 @@ const AppContent: React.FC = () => {
         <Grid container sx={{ height: '100%' }}>
           {/* Left Sidebar - Filters */}
           <Grid item xs={12} md={2.5} sx={{ height: '100%', borderRight: 1, borderColor: 'divider' }}>
-            <EnhancedFilterPanel
+            <FilterPanel
               filters={filters}
               onFiltersChange={setFilters}
               stats={data?.stats}
-              showConnectionFilters={view === 'list'}
             />
           </Grid>
 
-          {/* Center - Main View */}
+          {/* Center - Network Graph */}
           <Grid item xs={12} md={7} sx={{ height: '100%' }}>
-            {view === 'graph' ? (
-              <NetworkGraph
-                nodes={data?.nodes || []}
-                edges={data?.edges || []}
-                loading={isLoading}
-                onNodeSelect={handleNodeSelect}
-                onEdgeSelect={handleEdgeSelect}
-              />
-            ) : (
-              <ConnectionListView
-                connections={data?.connections || []}
-                loading={isLoading}
-              />
-            )}
+            <NetworkGraph
+              nodes={data?.nodes || []}
+              edges={data?.edges || []}
+              loading={isLoading}
+              onNodeSelect={handleNodeSelect}
+              onEdgeSelect={handleEdgeSelect}
+            />
           </Grid>
 
           {/* Right Sidebar - Details */}
@@ -171,24 +135,14 @@ const AppContent: React.FC = () => {
         </Grid>
       </Box>
 
-      {/* Drawer for Whitelist/Baseline Management */}
+      {/* Whitelist Drawer */}
       <Drawer
         anchor="right"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        PaperProps={{ sx: { width: 500 } }}
+        open={whitelistDrawerOpen}
+        onClose={() => setWhitelistDrawerOpen(false)}
+        PaperProps={{ sx: { width: 400 } }}
       >
-        <Tabs
-          value={drawerContent}
-          onChange={(_, value) => setDrawerContent(value)}
-          variant="fullWidth"
-        >
-          <Tab label="Whitelist" value="whitelist" />
-          <Tab label="Baselines" value="baseline" />
-        </Tabs>
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
-          {drawerContent === 'whitelist' ? <WhitelistManager /> : <BaselineManager />}
-        </Box>
+        <WhitelistManager />
       </Drawer>
 
       {/* Snackbar for notifications */}
