@@ -15,15 +15,22 @@ import {
   IconButton,
   Collapse,
   Tooltip,
-  Alert
+  Alert,
+  Toolbar,
+  Button,
+  Menu,
+  MenuItem,
+  Divider
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import type { Connection } from '../types/network';
 import { formatBytes, formatNumber } from '../utils/cytoscapeConfig';
+import { exportToCSV, exportToJSON, exportAnomaliesOnly, exportSummary } from '../utils/exportUtils';
 
 interface ConnectionListViewProps {
   connections: Connection[];
@@ -39,6 +46,7 @@ const ConnectionListView: React.FC<ConnectionListViewProps> = ({ connections, lo
   const [order, setOrder] = useState<Order>('desc');
   const [orderBy, setOrderBy] = useState<OrderBy>('timestamp');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleSort = (property: OrderBy) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -95,6 +103,27 @@ const ConnectionListView: React.FC<ConnectionListViewProps> = ({ connections, lo
     }
   };
 
+  const handleExport = (format: 'csv' | 'json' | 'anomalies-csv' | 'anomalies-json' | 'summary') => {
+    switch (format) {
+      case 'csv':
+        exportToCSV(sortedConnections);
+        break;
+      case 'json':
+        exportToJSON(sortedConnections);
+        break;
+      case 'anomalies-csv':
+        exportAnomaliesOnly(sortedConnections, 'csv');
+        break;
+      case 'anomalies-json':
+        exportAnomaliesOnly(sortedConnections, 'json');
+        break;
+      case 'summary':
+        exportSummary(sortedConnections);
+        break;
+    }
+    setExportMenuAnchor(null);
+  };
+
   if (connections.length === 0 && !loading) {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
@@ -110,6 +139,44 @@ const ConnectionListView: React.FC<ConnectionListViewProps> = ({ connections, lo
 
   return (
     <Paper sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Toolbar with Export Options */}
+      <Toolbar variant="dense" sx={{ borderBottom: 1, borderColor: 'divider', minHeight: 48 }}>
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          Connections ({connections.length})
+        </Typography>
+        <Button
+          startIcon={<FileDownloadIcon />}
+          onClick={(e) => setExportMenuAnchor(e.currentTarget)}
+          size="small"
+          variant="outlined"
+        >
+          Export
+        </Button>
+        <Menu
+          anchorEl={exportMenuAnchor}
+          open={Boolean(exportMenuAnchor)}
+          onClose={() => setExportMenuAnchor(null)}
+        >
+          <MenuItem onClick={() => handleExport('csv')}>
+            Export All as CSV
+          </MenuItem>
+          <MenuItem onClick={() => handleExport('json')}>
+            Export All as JSON
+          </MenuItem>
+          <Divider />
+          <MenuItem onClick={() => handleExport('anomalies-csv')}>
+            Export Anomalies Only (CSV)
+          </MenuItem>
+          <MenuItem onClick={() => handleExport('anomalies-json')}>
+            Export Anomalies Only (JSON)
+          </MenuItem>
+          <Divider />
+          <MenuItem onClick={() => handleExport('summary')}>
+            Export Summary with Stats
+          </MenuItem>
+        </Menu>
+      </Toolbar>
+
       <TableContainer sx={{ flex: 1, overflow: 'auto' }}>
         <Table stickyHeader size="small">
           <TableHead>
