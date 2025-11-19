@@ -52,24 +52,64 @@ export const createCytoscapeElements = (nodes: NetworkNode[], edges: NetworkEdge
 };
 
 export const cytoscapeStylesheet: cytoscape.Stylesheet[] = [
-  // Node styles
+  // Host node styles
   {
-    selector: 'node',
+    selector: 'node[!type]',
     style: {
       'background-color': 'data(color)',
       'label': 'data(label)',
       'width': 'data(size)',
       'height': 'data(size)',
-      'font-size': '12px',
+      'font-size': '10px',
       'text-valign': 'center',
       'text-halign': 'center',
       'color': '#fff',
       'text-outline-color': '#000',
-      'text-outline-width': '2px',
+      'text-outline-width': '1.5px',
       'overlay-opacity': 0,
       'border-width': 2,
       'border-color': '#fff',
       'border-opacity': 0.5
+    }
+  },
+  // Subnet parent node styles
+  {
+    selector: 'node[type="subnet"]',
+    style: {
+      'background-color': 'data(color)',
+      'background-opacity': 0.15,
+      'border-width': 3,
+      'border-color': 'data(color)',
+      'border-opacity': 0.8,
+      'border-style': 'dashed',
+      'label': 'data(label)',
+      'font-size': '14px',
+      'font-weight': 'bold',
+      'text-valign': 'top',
+      'text-halign': 'center',
+      'text-margin-y': 10,
+      'color': 'data(color)',
+      'text-outline-color': '#fff',
+      'text-outline-width': '2px',
+      'padding': '20px',
+      'shape': 'roundrectangle'
+    }
+  },
+  // Collapsed subnet (only shows parent)
+  {
+    selector: 'node[type="subnet"][collapsed]',
+    style: {
+      'background-opacity': 0.8,
+      'shape': 'round-rectangle',
+      'width': '120px',
+      'height': '80px'
+    }
+  },
+  // Hidden child nodes
+  {
+    selector: 'node.hidden',
+    style: {
+      'display': 'none'
     }
   },
   {

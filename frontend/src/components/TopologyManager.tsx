@@ -85,6 +85,42 @@ const TopologyManager: React.FC<TopologyManagerProps> = ({ open, onClose, onTopo
 
   // Load from localStorage
   useEffect(() => {
+    // Try loading from new format first
+    const savedTopology = localStorage.getItem('network-visualizer-topology');
+
+    if (savedTopology) {
+      try {
+        const topology = JSON.parse(savedTopology);
+        if (topology.subnets) {
+          // Convert from simple format back to full format
+          setSubnets(topology.subnets.map((s: any, idx: number) => ({
+            id: `subnet-${idx}`,
+            cidr: s.cidr,
+            name: s.name,
+            description: '',
+            type: s.type || 'internal',
+            vlan: s.vlan,
+            color: s.color,
+            collapsed: s.collapsed || false
+          })));
+        }
+        if (topology.hostGroups) {
+          setHostGroups(topology.hostGroups.map((g: any, idx: number) => ({
+            id: `group-${idx}`,
+            name: g.name,
+            description: '',
+            hosts: g.hosts || [],
+            icon: g.icon || '🖥️',
+            color: g.color || '#2196F3'
+          })));
+        }
+        return; // Don't try legacy format
+      } catch (e) {
+        console.error('Failed to load topology config:', e);
+      }
+    }
+
+    // Fall back to legacy format
     const savedSubnets = localStorage.getItem('network-topology-subnets');
     const savedGroups = localStorage.getItem('network-topology-groups');
 
@@ -106,9 +142,32 @@ const TopologyManager: React.FC<TopologyManagerProps> = ({ open, onClose, onTopo
   }, [open]);
 
   const handleSave = () => {
-    // Save to localStorage
+    // Save to localStorage in the format expected by subnet clustering
+    const topologyConfig = {
+      subnets: subnets.map(s => ({
+        cidr: s.cidr,
+        name: s.name,
+        type: s.type,
+        vlan: s.vlan,
+        color: s.color,
+        collapsed: s.collapsed || false
+      })),
+      hostGroups: hostGroups.map(g => ({
+        name: g.name,
+        hosts: g.hosts,
+        icon: g.icon,
+        color: g.color
+      }))
+    };
+
+    localStorage.setItem('network-visualizer-topology', JSON.stringify(topologyConfig));
+
+    // Also save to legacy keys for compatibility
     localStorage.setItem('network-topology-subnets', JSON.stringify(subnets));
     localStorage.setItem('network-topology-groups', JSON.stringify(hostGroups));
+
+    // Dispatch storage event to notify other components
+    window.dispatchEvent(new Event('storage'));
 
     // Notify parent
     if (onTopologyUpdate) {

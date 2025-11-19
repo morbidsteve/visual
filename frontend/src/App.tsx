@@ -33,7 +33,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import MapIcon from '@mui/icons-material/Map';
 import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import NetworkGraph from './components/NetworkGraph';
+import EnhancedNetworkGraph from './components/EnhancedNetworkGraph';
 import EnhancedFilterPanel from './components/EnhancedFilterPanel';
 import NodeDetails from './components/NodeDetails';
 import WhitelistManager from './components/WhitelistManager';
@@ -327,12 +327,13 @@ const AppContent: React.FC = () => {
                 loading={isLoading}
               />
             ) : view === 'graph' ? (
-              <NetworkGraph
+              <EnhancedNetworkGraph
                 nodes={data?.nodes || []}
                 edges={data?.edges || []}
                 loading={isLoading}
                 onNodeSelect={handleNodeSelect}
                 onEdgeSelect={handleEdgeSelect}
+                onRefresh={handleRefresh}
               />
             ) : (
               // Auto-switch to virtualized list for large datasets (>10k connections)
