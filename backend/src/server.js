@@ -10,6 +10,7 @@ const networkRoutes = require('./routes/networkRoutes');
 const whitelistRoutes = require('./routes/whitelistRoutes');
 const hostRoutes = require('./routes/hostRoutes');
 const largeScaleRoutes = require('./routes/largeScaleRoutes');
+const velociraptorRoutes = require('./routes/velociraptorRoutes');
 const websocketService = require('./services/websocketService');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/network', networkRoutes);
 app.use('/api/whitelist', whitelistRoutes);
 app.use('/api/host', hostRoutes);
 app.use('/api/large-scale', largeScaleRoutes);
+app.use('/api/velociraptor', velociraptorRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -59,6 +61,8 @@ const startServer = async () => {
       console.warn('WARNING: Elasticsearch connection failed. Server will start but data fetching will fail.');
     }
 
+    const velociraptorEnabled = !!process.env.VELOCIRAPTOR_API_KEY;
+
     const server = app.listen(PORT, () => {
       console.log(`
 ╔════════════════════════════════════════════════════════╗
@@ -66,6 +70,7 @@ const startServer = async () => {
 ║   Port: ${PORT}                                       ║
 ║   Environment: ${process.env.NODE_ENV || 'development'}                           ║
 ║   Elasticsearch: ${esConnected ? 'Connected ✓' : 'Disconnected ✗'}                     ║
+║   Velociraptor: ${velociraptorEnabled ? 'Enabled ✓' : 'Disabled ✗'}                      ║
 ║   WebSocket: ws://localhost:${PORT}/ws                ║
 ╚════════════════════════════════════════════════════════╝
       `);

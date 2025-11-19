@@ -14,7 +14,11 @@ import {
   Tab,
   Button,
   ToggleButtonGroup,
-  ToggleButton
+  ToggleButton,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -26,6 +30,8 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SecurityIcon from '@mui/icons-material/Security';
+import MapIcon from '@mui/icons-material/Map';
+import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NetworkGraph from './components/NetworkGraph';
 import EnhancedFilterPanel from './components/EnhancedFilterPanel';
@@ -43,9 +49,11 @@ import SettingsDialog from './components/SettingsDialog';
 import ThreatHuntingPresets from './components/ThreatHuntingPresets';
 import TimelineView from './components/TimelineView';
 import AdvancedFilterBuilder from './components/AdvancedFilterBuilder';
+import TopologyManager from './components/TopologyManager';
+import VelociraptorCorrelationPanel from './components/VelociraptorCorrelationPanel';
 import { useNetworkTopology, useNetworkConnections } from './hooks/useNetworkData';
 import { useWebSocket } from './hooks/useWebSocket';
-import type { NetworkNode, NetworkEdge, NetworkFilters } from './types/network';
+import type { NetworkNode, NetworkEdge, NetworkFilters, Connection } from './types/network';
 import type { AppSettings } from './components/SettingsDialog';
 
 const queryClient = new QueryClient({
@@ -67,6 +75,9 @@ const AppContent: React.FC = () => {
   const [useVirtualizedList, setUseVirtualizedList] = useState(false);
   const [savedFiltersOpen, setSavedFiltersOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [topologyManagerOpen, setTopologyManagerOpen] = useState(false);
+  const [correlationPanelOpen, setCorrelationPanelOpen] = useState(false);
+  const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -224,6 +235,16 @@ const AppContent: React.FC = () => {
 
           {/* Actions */}
           <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title="Network Topology">
+              <IconButton color="inherit" onClick={() => setTopologyManagerOpen(true)}>
+                <MapIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Velociraptor Correlation">
+              <IconButton color="inherit" onClick={() => setCorrelationPanelOpen(true)}>
+                <NetworkCheckIcon />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Threat Hunting">
               <IconButton color="inherit" onClick={() => handleDrawerOpen('threats')}>
                 <SecurityIcon />
@@ -403,6 +424,38 @@ const AppContent: React.FC = () => {
         onClose={() => setSettingsOpen(false)}
         onSettingsSaved={handleSettingsSaved}
       />
+
+      {/* Topology Manager Dialog */}
+      <Dialog
+        open={topologyManagerOpen}
+        onClose={() => setTopologyManagerOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>Network Topology Configuration</DialogTitle>
+        <DialogContent>
+          <TopologyManager />
+        </DialogContent>
+      </Dialog>
+
+      {/* Velociraptor Correlation Panel Dialog */}
+      <Dialog
+        open={correlationPanelOpen}
+        onClose={() => setCorrelationPanelOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Velociraptor Endpoint Correlation</DialogTitle>
+        <DialogContent>
+          <VelociraptorCorrelationPanel
+            connection={selectedConnection}
+            onClose={() => {
+              setCorrelationPanelOpen(false);
+              setSelectedConnection(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };
