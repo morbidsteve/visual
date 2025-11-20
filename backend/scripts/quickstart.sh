@@ -377,7 +377,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo -e "${CYAN}  Or start them separately:${NC}"
     echo "    Backend:  cd backend && npm start"
-    echo "    Frontend: cd frontend && npm run dev"
+    echo "    Frontend: cd frontend && npm start"
     echo ""
     echo -e "${YELLOW}Elasticsearch Configuration:${NC}"
     echo "  URL: http://localhost:9200"

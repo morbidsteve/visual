@@ -433,7 +433,7 @@ npm start
 
 ```bash
 cd frontend
-npm run dev
+npm start
 ```
 
 Open: http://localhost:3000

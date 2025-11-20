@@ -104,7 +104,7 @@ echo -e "${GREEN}✓ Backend running (PID: $BACKEND_PID)${NC}"
 # Start frontend server
 echo -e "${CYAN}Starting frontend on http://localhost:3000...${NC}"
 cd "$SCRIPT_DIR/frontend"
-npm run dev > "$SCRIPT_DIR/.frontend.log" 2>&1 &
+npm start > "$SCRIPT_DIR/.frontend.log" 2>&1 &
 FRONTEND_PID=$!
 
 # Wait for frontend to start

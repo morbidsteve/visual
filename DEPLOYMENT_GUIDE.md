@@ -173,7 +173,7 @@ npm install
 npm run build
 
 # Or run development server
-npm run dev
+npm start
 ```
 
 ### 4. Production Deployment
