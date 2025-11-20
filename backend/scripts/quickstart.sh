@@ -13,6 +13,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
@@ -36,13 +37,224 @@ if [[ ! "$SCALE" =~ ^(small|medium|large|enterprise)$ ]]; then
     exit 1
 fi
 
-# Check if Docker is running
-echo -e "${YELLOW}Checking Docker...${NC}"
-if ! docker info > /dev/null 2>&1; then
-    echo -e "${RED}✗ Docker is not running. Please start Docker first.${NC}"
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to detect OS
+detect_os() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "linux"
+    else
+        echo "unknown"
+    fi
+}
+
+OS_TYPE=$(detect_os)
+
+# Dependency validation
+echo -e "${YELLOW}Checking dependencies...${NC}"
+MISSING_DEPS=()
+
+# Check Node.js
+if ! command_exists node; then
+    MISSING_DEPS+=("node")
+    echo -e "${RED}✗ Node.js not found${NC}"
+else
+    NODE_VERSION=$(node --version)
+    echo -e "${GREEN}✓ Node.js ${NODE_VERSION}${NC}"
+fi
+
+# Check npm
+if ! command_exists npm; then
+    MISSING_DEPS+=("npm")
+    echo -e "${RED}✗ npm not found${NC}"
+else
+    NPM_VERSION=$(npm --version)
+    echo -e "${GREEN}✓ npm ${NPM_VERSION}${NC}"
+fi
+
+# Check Docker
+if ! command_exists docker; then
+    MISSING_DEPS+=("docker")
+    echo -e "${RED}✗ Docker not found${NC}"
+else
+    DOCKER_VERSION=$(docker --version | awk '{print $3}' | sed 's/,//')
+    echo -e "${GREEN}✓ Docker ${DOCKER_VERSION}${NC}"
+
+    # Check if Docker daemon is running
+    if ! docker info > /dev/null 2>&1; then
+        echo -e "${RED}✗ Docker daemon is not running${NC}"
+        MISSING_DEPS+=("docker-running")
+    fi
+fi
+
+# Check docker-compose
+if ! command_exists docker-compose; then
+    MISSING_DEPS+=("docker-compose")
+    echo -e "${RED}✗ docker-compose not found${NC}"
+else
+    COMPOSE_VERSION=$(docker-compose --version | awk '{print $3}' | sed 's/,//')
+    echo -e "${GREEN}✓ docker-compose ${COMPOSE_VERSION}${NC}"
+fi
+
+# Check curl (used in health checks)
+if ! command_exists curl; then
+    MISSING_DEPS+=("curl")
+    echo -e "${RED}✗ curl not found${NC}"
+else
+    echo -e "${GREEN}✓ curl${NC}"
+fi
+
+echo ""
+
+# If there are missing dependencies, provide installation instructions
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+    echo -e "${RED}╔════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║   Missing Dependencies                                ║${NC}"
+    echo -e "${RED}╚════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${YELLOW}The following dependencies are missing:${NC}"
+    for dep in "${MISSING_DEPS[@]}"; do
+        echo "  - $dep"
+    done
+    echo ""
+
+    if [ "$OS_TYPE" == "macos" ]; then
+        echo -e "${CYAN}Installation Instructions for macOS:${NC}"
+        echo ""
+
+        # Check if Homebrew is installed
+        if ! command_exists brew; then
+            echo -e "${YELLOW}1. Install Homebrew (package manager):${NC}"
+            echo '   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+            echo ""
+        fi
+
+        if [[ " ${MISSING_DEPS[@]} " =~ " node " ]] || [[ " ${MISSING_DEPS[@]} " =~ " npm " ]]; then
+            echo -e "${YELLOW}Install Node.js (includes npm):${NC}"
+            if command_exists brew; then
+                echo "   brew install node"
+            else
+                echo "   Download from: https://nodejs.org/ (LTS version recommended)"
+            fi
+            echo ""
+        fi
+
+        if [[ " ${MISSING_DEPS[@]} " =~ " docker " ]] || [[ " ${MISSING_DEPS[@]} " =~ " docker-compose " ]] || [[ " ${MISSING_DEPS[@]} " =~ " docker-running " ]]; then
+            echo -e "${YELLOW}Install Docker Desktop for Mac:${NC}"
+            if command_exists brew; then
+                echo "   brew install --cask docker"
+            else
+                echo "   Download from: https://www.docker.com/products/docker-desktop"
+            fi
+            echo ""
+            echo "   After installation:"
+            echo "   1. Open Docker Desktop application"
+            echo "   2. Wait for Docker to start (icon in menu bar)"
+            echo "   3. Run this script again"
+            echo ""
+        fi
+
+        if [[ " ${MISSING_DEPS[@]} " =~ " docker-running " ]]; then
+            echo -e "${YELLOW}Docker is installed but not running:${NC}"
+            echo "   1. Open Docker Desktop application"
+            echo "   2. Wait for the Docker icon to appear in the menu bar"
+            echo "   3. Wait until the icon is steady (not animated)"
+            echo "   4. Run this script again"
+            echo ""
+        fi
+
+        if [[ " ${MISSING_DEPS[@]} " =~ " curl " ]]; then
+            echo -e "${YELLOW}Install curl:${NC}"
+            echo "   brew install curl"
+            echo ""
+        fi
+
+    elif [ "$OS_TYPE" == "linux" ]; then
+        echo -e "${CYAN}Installation Instructions for Linux:${NC}"
+        echo ""
+
+        if [[ " ${MISSING_DEPS[@]} " =~ " node " ]] || [[ " ${MISSING_DEPS[@]} " =~ " npm " ]]; then
+            echo -e "${YELLOW}Install Node.js and npm:${NC}"
+            echo "   # Using Ubuntu/Debian:"
+            echo "   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+            echo "   sudo apt-get install -y nodejs"
+            echo ""
+            echo "   # Using Fedora/RHEL:"
+            echo "   curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -"
+            echo "   sudo dnf install -y nodejs"
+            echo ""
+        fi
+
+        if [[ " ${MISSING_DEPS[@]} " =~ " docker " ]]; then
+            echo -e "${YELLOW}Install Docker:${NC}"
+            echo "   # Using Ubuntu/Debian:"
+            echo "   curl -fsSL https://get.docker.com | sh"
+            echo "   sudo usermod -aG docker $USER"
+            echo ""
+            echo "   # Using Fedora/RHEL:"
+            echo "   sudo dnf install docker"
+            echo "   sudo systemctl start docker"
+            echo "   sudo usermod -aG docker $USER"
+            echo ""
+        fi
+
+        if [[ " ${MISSING_DEPS[@]} " =~ " docker-compose " ]]; then
+            echo -e "${YELLOW}Install docker-compose:${NC}"
+            echo "   sudo curl -L \"https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-\$(uname -s)-\$(uname -m)\" -o /usr/local/bin/docker-compose"
+            echo "   sudo chmod +x /usr/local/bin/docker-compose"
+            echo ""
+        fi
+
+        if [[ " ${MISSING_DEPS[@]} " =~ " curl " ]]; then
+            echo -e "${YELLOW}Install curl:${NC}"
+            echo "   sudo apt-get install curl  # Ubuntu/Debian"
+            echo "   sudo dnf install curl       # Fedora/RHEL"
+            echo ""
+        fi
+    else
+        echo -e "${CYAN}Please install the missing dependencies for your operating system.${NC}"
+        echo ""
+    fi
+
+    echo -e "${YELLOW}Quick Install All (macOS with Homebrew):${NC}"
+    if [ "$OS_TYPE" == "macos" ]; then
+        echo "   brew install node"
+        echo "   brew install --cask docker"
+        echo "   # Then open Docker Desktop and wait for it to start"
+        echo ""
+    fi
+
+    echo -e "${RED}Please install the missing dependencies and run this script again.${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Docker is running${NC}"
+
+echo -e "${GREEN}✓ All dependencies are installed${NC}"
+echo ""
+
+# Check Docker daemon is running
+echo -e "${YELLOW}Checking Docker daemon...${NC}"
+if ! docker info > /dev/null 2>&1; then
+    echo -e "${RED}✗ Docker daemon is not running${NC}"
+    if [ "$OS_TYPE" == "macos" ]; then
+        echo ""
+        echo "Please start Docker Desktop:"
+        echo "  1. Open Docker Desktop application"
+        echo "  2. Wait for the Docker icon to appear in the menu bar"
+        echo "  3. Wait until the icon is steady (not animated)"
+        echo "  4. Run this script again"
+    else
+        echo ""
+        echo "Please start Docker:"
+        echo "  sudo systemctl start docker"
+    fi
+    exit 1
+fi
+echo -e "${GREEN}✓ Docker daemon is running${NC}"
 echo ""
 
 # Start Elasticsearch and Kibana
@@ -62,7 +274,7 @@ else
     TRIES=0
     while [ $TRIES -lt $MAX_TRIES ]; do
         if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
-            echo -e "${GREEN}✓ Elasticsearch is ready${NC}"
+            echo -e "\n${GREEN}✓ Elasticsearch is ready${NC}"
             break
         fi
         TRIES=$((TRIES + 1))
@@ -71,7 +283,10 @@ else
     done
 
     if [ $TRIES -eq $MAX_TRIES ]; then
-        echo -e "${RED}✗ Elasticsearch failed to start${NC}"
+        echo -e "\n${RED}✗ Elasticsearch failed to start${NC}"
+        echo ""
+        echo "Checking logs:"
+        docker logs network-viz-elasticsearch --tail 50
         exit 1
     fi
 fi
@@ -83,6 +298,8 @@ cd "$PROJECT_ROOT/backend"
 if [ ! -d "node_modules" ]; then
     echo "Installing dependencies..."
     npm install
+else
+    echo "Dependencies already installed"
 fi
 echo -e "${GREEN}✓ Dependencies ready${NC}"
 echo ""

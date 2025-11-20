@@ -13,6 +13,56 @@ The mock data generator creates realistic Zeek-like network connection logs with
 
 ---
 
+## Prerequisites
+
+Before running the quick start script, ensure you have the following installed:
+
+### Required Software
+
+- **Node.js** (v18 or later) - [Download](https://nodejs.org/)
+- **npm** (comes with Node.js)
+- **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop)
+- **docker-compose** (included with Docker Desktop)
+- **curl** (usually pre-installed on Mac/Linux)
+
+### Installation on macOS
+
+The quickstart script will automatically detect missing dependencies and provide installation instructions. For manual installation:
+
+```bash
+# Install Homebrew (if not already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Node.js (includes npm)
+brew install node
+
+# Install Docker Desktop
+brew install --cask docker
+
+# Open Docker Desktop and wait for it to start
+# Look for the Docker icon in your menu bar
+```
+
+### Installation on Linux
+
+```bash
+# Install Node.js and npm (Ubuntu/Debian)
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Install Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+
+# Install docker-compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Log out and back in for Docker group changes to take effect
+```
+
+---
+
 ## Quick Start (Recommended)
 
 The fastest way to get started:
@@ -23,14 +73,31 @@ cd backend/scripts
 ./quickstart.sh medium 24
 ```
 
-This will:
-1. ✓ Start Elasticsearch and Kibana in Docker
-2. ✓ Generate 1,000 hosts worth of data over 24 hours (~240k connections)
-3. ✓ Create proper indices and mappings
-4. ✓ Load all data into Elasticsearch
-5. ✓ Verify the data
+**The script will automatically:**
+1. ✓ Check all required dependencies (Node.js, npm, Docker, docker-compose, curl)
+2. ✓ Provide installation instructions for any missing dependencies
+3. ✓ Verify Docker daemon is running
+4. ✓ Start Elasticsearch and Kibana in Docker
+5. ✓ Generate 1,000 hosts worth of data over 24 hours (~240k connections)
+6. ✓ Create proper indices and mappings
+7. ✓ Load all data into Elasticsearch
+8. ✓ Verify the data
 
 **Time**: ~5-10 minutes depending on scale
+
+**If Dependencies Are Missing:**
+The script will detect and show exactly what's needed:
+```
+✗ Node.js not found
+✗ npm not found
+✓ Docker 24.0.5
+✗ Docker daemon is not running
+
+Installation Instructions for macOS:
+  brew install node
+  brew install --cask docker
+  # Then open Docker Desktop and wait for it to start
+```
 
 ---
 
