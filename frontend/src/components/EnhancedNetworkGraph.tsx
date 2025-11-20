@@ -156,9 +156,26 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
     // Create clustered elements
     const elements = createClusteredElements(nodes, edges, topology, strategy);
 
+    // Frontend safety check: Validate edges reference existing nodes
+    const nodeIds = new Set(elements.filter(el => !el.data.source).map(el => el.data.id));
+    const validElements = elements.filter(el => {
+      // Keep all nodes
+      if (!el.data.source) return true;
+
+      // For edges, check if source and target nodes exist
+      const hasSource = nodeIds.has(el.data.source);
+      const hasTarget = nodeIds.has(el.data.target);
+
+      if (!hasSource || !hasTarget) {
+        console.warn(`Frontend filtered invalid edge ${el.data.id}: source=${hasSource}, target=${hasTarget}`);
+        return false;
+      }
+      return true;
+    });
+
     // Update graph
     cy.elements().remove();
-    cy.add(elements);
+    cy.add(validElements);
 
     // Apply collapsed state
     collapsedSubnets.forEach(subnetId => {

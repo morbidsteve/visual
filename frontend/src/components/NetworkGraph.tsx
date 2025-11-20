@@ -98,9 +98,26 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({
     const cy = cyRef.current;
     const elements = createCytoscapeElements(nodes, edges);
 
+    // Frontend safety check: Validate edges reference existing nodes
+    const nodeIds = new Set(elements.filter(el => !el.data.source).map(el => el.data.id));
+    const validElements = elements.filter(el => {
+      // Keep all nodes
+      if (!el.data.source) return true;
+
+      // For edges, check if source and target nodes exist
+      const hasSource = nodeIds.has(el.data.source);
+      const hasTarget = nodeIds.has(el.data.target);
+
+      if (!hasSource || !hasTarget) {
+        console.warn(`Frontend filtered invalid edge ${el.data.id}: source=${hasSource}, target=${hasTarget}`);
+        return false;
+      }
+      return true;
+    });
+
     // Update elements
     cy.elements().remove();
-    cy.add(elements);
+    cy.add(validElements);
 
     // Run layout
     cy.layout(cytoscapeLayout).run();
