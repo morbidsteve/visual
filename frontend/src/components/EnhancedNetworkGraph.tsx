@@ -156,6 +156,9 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
     // Create clustered elements
     const elements = createClusteredElements(nodes, edges, topology, strategy);
 
+    console.log(`[DEBUG] EnhancedNetworkGraph: Received ${nodes.length} nodes, ${edges.length} edges`);
+    console.log(`[DEBUG] createClusteredElements returned ${elements.length} elements`);
+
     // Frontend safety check: Validate edges reference existing nodes
     const nodeIds = new Set(elements.filter(el => !('source' in el.data)).map(el => el.data.id));
     const validElements = elements.filter(el => {
@@ -173,9 +176,22 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
       return true;
     });
 
+    console.log(`[DEBUG] After validation: ${validElements.length} valid elements (${nodeIds.size} nodes)`);
+
+    // Only update graph if we have valid elements
+    if (validElements.length === 0) {
+      console.warn('[DEBUG] No valid elements to display. Skipping graph update.');
+      return;
+    }
+
     // Update graph
-    cy.elements().remove();
-    cy.add(validElements);
+    try {
+      cy.elements().remove();
+      cy.add(validElements);
+    } catch (error) {
+      console.error('[DEBUG] Error adding elements to Cytoscape:', error);
+      return;
+    }
 
     // Apply collapsed state
     collapsedSubnets.forEach(subnetId => {
@@ -185,8 +201,16 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
       parent.data('collapsed', true);
     });
 
-    // Run layout
-    runLayout(layoutType);
+    // Run layout only if we have elements
+    if (cy.nodes().length > 0) {
+      try {
+        runLayout(layoutType);
+      } catch (error) {
+        console.error('[DEBUG] Error running layout:', error);
+      }
+    } else {
+      console.warn('[DEBUG] No nodes in graph, skipping layout');
+    }
   }, [nodes, edges, topology, clusterMode, layoutType, collapsedSubnets, loading]);
 
   const handleSubnetClick = (subnetData: any, event: MouseEvent) => {
