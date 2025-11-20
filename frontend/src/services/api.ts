@@ -33,6 +33,11 @@ export const networkApi = {
     }
 
     const response = await api.get<NetworkTopology>(`/api/network/topology?${params.toString()}`);
+    console.log(`[DEBUG] networkApi.getTopology response:`, {
+      nodes: response.data?.nodes?.length || 0,
+      edges: response.data?.edges?.length || 0,
+      stats: response.data?.stats
+    });
     return response.data;
   },
 
@@ -70,6 +75,12 @@ export const networkApi = {
     }
 
     const response = await api.get<ConnectionsResponse>(`/api/network/connections?${params.toString()}`);
+    console.log(`[DEBUG] networkApi.getConnections response:`, {
+      connections: response.data?.connections?.length || 0,
+      nodes: response.data?.nodes?.length || 0,
+      total: response.data?.total,
+      stats: response.data?.stats
+    });
     return response.data;
   },
 
