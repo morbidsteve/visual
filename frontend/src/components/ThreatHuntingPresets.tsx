@@ -241,7 +241,7 @@ const ThreatHuntingPresets: React.FC<ThreatHuntingPresetsProps> = ({
   onFilterApply,
   currentFilters
 }) => {
-  const categories = [...new Set(threatPresets.map(p => p.category))];
+  const categories = Array.from(new Set(threatPresets.map(p => p.category)));
 
   const isPresetActive = (preset: ThreatPreset): boolean => {
     return Object.entries(preset.filters).every(([key, value]) => {

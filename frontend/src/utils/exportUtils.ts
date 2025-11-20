@@ -67,10 +67,10 @@ export const exportToCSV = (connections: Connection[], filename: string = 'conne
   downloadFile(csvContent, filename, 'text/csv;charset=utf-8;');
 };
 
-export const exportToJSON = (connections: Connection[], filename: string = 'connections.json', prettify: boolean = true) => {
+export const exportToJSON = (data: Connection[] | any, filename: string = 'connections.json', prettify: boolean = true) => {
   const jsonContent = prettify
-    ? JSON.stringify(connections, null, 2)
-    : JSON.stringify(connections);
+    ? JSON.stringify(data, null, 2)
+    : JSON.stringify(data);
 
   downloadFile(jsonContent, filename, 'application/json;charset=utf-8;');
 };

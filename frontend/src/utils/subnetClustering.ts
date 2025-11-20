@@ -172,9 +172,9 @@ export const createClusteredElements = (
     nodes.forEach(node => {
       elements.push({
         data: {
+          ...node,
           id: node.id,
           label: node.ip,
-          ...node,
           size: Math.max(20, Math.min(60, Math.log(node.connections + 1) * 15))
         }
       });
@@ -207,10 +207,10 @@ export const createClusteredElements = (
 
           elements.push({
             data: {
+              ...node,
               id: node.id,
               parent: parentId,
               label: node.ip,
-              ...node,
               size: Math.max(15, Math.min(40, Math.log(node.connections + 1) * 10)),
               hidden: isCollapsed
             },
@@ -227,11 +227,11 @@ export const createClusteredElements = (
 
     elements.push({
       data: {
+        ...edge,
         id: edge.id,
         source: edge.source,
         target: edge.target,
         label: `${edge.protocol}:${edge.destPort}`,
-        ...edge,
         width
       }
     });

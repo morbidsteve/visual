@@ -14,7 +14,7 @@ const NODE_COLORS = {
 };
 
 // Edge colors based on protocol
-const EDGE_COLORS = {
+const EDGE_COLORS: { [key: string]: string } = {
   tcp: '#42A5F5',
   udp: '#66BB6A',
   icmp: '#FFA726',
@@ -24,9 +24,9 @@ const EDGE_COLORS = {
 export const createCytoscapeElements = (nodes: NetworkNode[], edges: NetworkEdge[]) => {
   const cyNodes = nodes.map(node => ({
     data: {
+      ...node,
       id: node.id,
       label: node.ip,
-      ...node,
       color: node.isInternal ? NODE_COLORS[node.type] : NODE_COLORS.external,
       size: Math.max(20, Math.min(80, Math.log(node.connections + 1) * 15))
     }
@@ -37,11 +37,11 @@ export const createCytoscapeElements = (nodes: NetworkNode[], edges: NetworkEdge
 
     return {
       data: {
+        ...edge,
         id: edge.id,
         source: edge.source,
         target: edge.target,
         label: `${edge.protocol}:${edge.destPort}`,
-        ...edge,
         color: EDGE_COLORS[edge.protocol.toLowerCase()] || EDGE_COLORS.default,
         width
       }
@@ -51,7 +51,7 @@ export const createCytoscapeElements = (nodes: NetworkNode[], edges: NetworkEdge
   return [...cyNodes, ...cyEdges];
 };
 
-export const cytoscapeStylesheet: cytoscape.Stylesheet[] = [
+export const cytoscapeStylesheet: any[] = [
   // Host node styles
   {
     selector: 'node[!type]',
