@@ -19,7 +19,10 @@ Before running the quick start script, ensure you have the following installed:
 
 ### Required Software
 
-- **Node.js** (v18 or later) - [Download](https://nodejs.org/)
+- **Node.js** (v18 LTS or v20 LTS) - [Download](https://nodejs.org/)
+  - ⚠️ **Important**: Use LTS versions only (v18 or v20)
+  - ❌ **Do NOT use** v21, v22, v23, v25, etc. (will cause build errors)
+  - ✅ **Recommended**: Node.js v20 LTS for best compatibility
 - **npm** (comes with Node.js)
 - **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop)
 - **docker-compose** (included with Docker Desktop)
@@ -33,8 +36,15 @@ The quickstart script will automatically detect missing dependencies and provide
 # Install Homebrew (if not already installed)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# Install Node.js (includes npm)
-brew install node
+# Install Node.js v20 LTS (recommended)
+brew install node@20
+brew link node@20
+
+# OR if you need to manage multiple Node versions
+brew install nvm
+nvm install 20
+nvm use 20
+nvm alias default 20
 
 # Install Docker Desktop
 brew install --cask docker
@@ -43,12 +53,34 @@ brew install --cask docker
 # Look for the Docker icon in your menu bar
 ```
 
+**If you already have Node.js installed but it's the wrong version:**
+```bash
+# Check your current version
+node --version
+
+# If it shows v21+ or v25+, uninstall and install LTS
+brew uninstall node
+brew install node@20
+brew link node@20
+```
+
 ### Installation on Linux
 
 ```bash
-# Install Node.js and npm (Ubuntu/Debian)
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+# Install Node.js v20 LTS (Ubuntu/Debian)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
+
+# OR Install Node.js v20 LTS (Fedora/RHEL)
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo dnf install -y nodejs
+
+# OR use nvm for version management
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc  # or ~/.zshrc
+nvm install 20
+nvm use 20
+nvm alias default 20
 
 # Install Docker
 curl -fsSL https://get.docker.com | sh

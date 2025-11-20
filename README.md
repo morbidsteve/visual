@@ -64,9 +64,101 @@ A real-time network topology visualization tool designed for Security Operations
 - Kubernetes deployments
 - Nginx reverse proxy
 
+## Prerequisites
+
+Before starting, ensure you have the following installed:
+
+### Required Software
+
+- **Node.js** (v18 LTS or v20 LTS) - [Download](https://nodejs.org/)
+  - ⚠️ **Important**: Use LTS versions only (v18 or v20)
+  - ❌ **Do NOT use** v21, v22, v23, v25, etc. (will cause build errors)
+  - ✅ **Recommended**: Node.js v20 LTS for best compatibility
+  - Why? The `better-sqlite3` dependency requires C++17 and is incompatible with Node.js v21+
+
+- **npm** (comes with Node.js)
+
+- **Docker** and **docker-compose** - [Download Docker Desktop](https://www.docker.com/products/docker-desktop)
+  - macOS: Docker Desktop includes both
+  - Linux: Install both separately
+
+- **curl** (for health checks)
+
+### Installing the Correct Node.js Version
+
+If you have the wrong Node.js version installed, here's how to fix it:
+
+#### macOS (using Homebrew)
+```bash
+# Uninstall current version
+brew uninstall node
+
+# Install Node.js v20 LTS (recommended)
+brew install node@20
+brew link node@20
+
+# OR use nvm (Node Version Manager)
+brew install nvm
+# Follow post-install instructions, then:
+nvm install 20
+nvm use 20
+nvm alias default 20
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+# Using NodeSource repository (Node.js v20 LTS)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# OR use nvm (Node Version Manager)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+# Restart terminal, then:
+nvm install 20
+nvm use 20
+nvm alias default 20
+```
+
+#### Linux (Fedora/RHEL)
+```bash
+# Using NodeSource repository (Node.js v20 LTS)
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo dnf install -y nodejs
+```
+
+### Verify Installation
+```bash
+node --version  # Should show v18.x.x or v20.x.x
+npm --version
+docker --version
+docker-compose --version
+```
+
 ## Quick Start
 
-### Using Docker Compose (Recommended for Testing)
+### Option 1: Quick Setup with Mock Data (Recommended for Testing)
+
+The fastest way to get started is using our automated quickstart script with mock data:
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd visual
+
+# Run the quickstart script
+# This will:
+# - Validate all dependencies
+# - Start Elasticsearch and Kibana
+# - Generate and load realistic mock data
+cd backend/scripts
+./quickstart.sh medium  # Options: small, medium, large, enterprise
+```
+
+The script will guide you through installation if any dependencies are missing.
+
+See [MOCK_DATA_SETUP.md](MOCK_DATA_SETUP.md) for detailed information about mock data scales and features.
+
+### Option 2: Using Docker Compose (Recommended for Testing)
 
 1. **Clone the repository**
    ```bash
@@ -266,6 +358,47 @@ The frontend will proxy API requests to `http://localhost:3001`.
 6. **Data Sensitivity**: Network topology data may be sensitive - secure appropriately
 
 ## Troubleshooting
+
+### npm install fails with better-sqlite3 build errors
+
+**Error:**
+```
+error: "C++20 or later required."
+gyp ERR! build error
+make: *** [Release/obj.target/better_sqlite3/src/better_sqlite3.o] Error 1
+```
+
+**Cause:** You're using an incompatible Node.js version (v21 or higher).
+
+**Solution:**
+1. Check your Node.js version:
+   ```bash
+   node --version
+   ```
+
+2. If it shows v21, v22, v23, v25, etc., install Node.js v20 LTS:
+
+   **macOS:**
+   ```bash
+   brew uninstall node
+   brew install node@20
+   brew link node@20
+   node --version  # Verify it shows v20.x.x
+   ```
+
+   **Linux:**
+   ```bash
+   # Ubuntu/Debian
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+   ```
+
+3. After installing the correct version, try again:
+   ```bash
+   cd backend
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
 
 ### Backend won't connect to Elasticsearch
 

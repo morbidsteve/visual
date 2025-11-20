@@ -65,7 +65,19 @@ if ! command_exists node; then
     echo -e "${RED}✗ Node.js not found${NC}"
 else
     NODE_VERSION=$(node --version)
-    echo -e "${GREEN}✓ Node.js ${NODE_VERSION}${NC}"
+    NODE_MAJOR=$(node --version | cut -d'.' -f1 | sed 's/v//')
+
+    # Check if version is too new (>20) or too old (<18)
+    if [ "$NODE_MAJOR" -lt 18 ]; then
+        echo -e "${RED}✗ Node.js ${NODE_VERSION} (too old, need v18 or v20 LTS)${NC}"
+        MISSING_DEPS+=("node-version")
+    elif [ "$NODE_MAJOR" -gt 20 ]; then
+        echo -e "${YELLOW}⚠ Node.js ${NODE_VERSION} (too new, may cause build errors)${NC}"
+        echo -e "${YELLOW}  Recommended: Use Node.js v18 LTS or v20 LTS${NC}"
+        MISSING_DEPS+=("node-version")
+    else
+        echo -e "${GREEN}✓ Node.js ${NODE_VERSION}${NC}"
+    fi
 fi
 
 # Check npm
@@ -134,13 +146,30 @@ if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
             echo ""
         fi
 
-        if [[ " ${MISSING_DEPS[@]} " =~ " node " ]] || [[ " ${MISSING_DEPS[@]} " =~ " npm " ]]; then
-            echo -e "${YELLOW}Install Node.js (includes npm):${NC}"
+        if [[ " ${MISSING_DEPS[@]} " =~ " node " ]] || [[ " ${MISSING_DEPS[@]} " =~ " npm " ]] || [[ " ${MISSING_DEPS[@]} " =~ " node-version " ]]; then
+            echo -e "${YELLOW}Install/Switch to Node.js LTS (v18 or v20):${NC}"
             if command_exists brew; then
-                echo "   brew install node"
+                echo "   # Uninstall current version if needed:"
+                echo "   brew uninstall node"
+                echo ""
+                echo "   # Install Node.js v20 LTS (recommended):"
+                echo "   brew install node@20"
+                echo "   brew link node@20"
+                echo ""
+                echo "   # OR use nvm (Node Version Manager):"
+                echo "   brew install nvm"
+                echo "   nvm install 20"
+                echo "   nvm use 20"
+                echo "   nvm alias default 20"
             else
-                echo "   Download from: https://nodejs.org/ (LTS version recommended)"
+                echo "   Download Node.js v20 LTS from: https://nodejs.org/"
+                echo "   (Choose the LTS version, not Current)"
             fi
+            echo ""
+            echo -e "${CYAN}Why Node.js LTS?${NC}"
+            echo "   - Better-sqlite3 has compatibility issues with Node.js v21+"
+            echo "   - v18 and v20 are Long Term Support (LTS) versions"
+            echo "   - More stable for production use"
             echo ""
         fi
 
@@ -178,15 +207,26 @@ if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
         echo -e "${CYAN}Installation Instructions for Linux:${NC}"
         echo ""
 
-        if [[ " ${MISSING_DEPS[@]} " =~ " node " ]] || [[ " ${MISSING_DEPS[@]} " =~ " npm " ]]; then
-            echo -e "${YELLOW}Install Node.js and npm:${NC}"
-            echo "   # Using Ubuntu/Debian:"
-            echo "   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+        if [[ " ${MISSING_DEPS[@]} " =~ " node " ]] || [[ " ${MISSING_DEPS[@]} " =~ " npm " ]] || [[ " ${MISSING_DEPS[@]} " =~ " node-version " ]]; then
+            echo -e "${YELLOW}Install/Switch to Node.js LTS (v18 or v20):${NC}"
+            echo "   # Using Ubuntu/Debian (Node.js v20 LTS):"
+            echo "   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
             echo "   sudo apt-get install -y nodejs"
             echo ""
-            echo "   # Using Fedora/RHEL:"
-            echo "   curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -"
+            echo "   # Using Fedora/RHEL (Node.js v20 LTS):"
+            echo "   curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -"
             echo "   sudo dnf install -y nodejs"
+            echo ""
+            echo "   # OR use nvm (Node Version Manager):"
+            echo "   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash"
+            echo "   nvm install 20"
+            echo "   nvm use 20"
+            echo "   nvm alias default 20"
+            echo ""
+            echo -e "${CYAN}Why Node.js LTS?${NC}"
+            echo "   - Better-sqlite3 has compatibility issues with Node.js v21+"
+            echo "   - v18 and v20 are Long Term Support (LTS) versions"
+            echo "   - More stable for production use"
             echo ""
         fi
 
@@ -223,7 +263,8 @@ if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
 
     echo -e "${YELLOW}Quick Install All (macOS with Homebrew):${NC}"
     if [ "$OS_TYPE" == "macos" ]; then
-        echo "   brew install node"
+        echo "   brew install node@20"
+        echo "   brew link node@20"
         echo "   brew install --cask docker"
         echo "   # Then open Docker Desktop and wait for it to start"
         echo ""
