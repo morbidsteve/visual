@@ -228,6 +228,11 @@ class ElasticsearchService {
    * Extract /24 subnet from IP
    */
   getSubnet(ip) {
+    // Handle null/undefined IP
+    if (!ip || typeof ip !== 'string') {
+      return 'unknown';
+    }
+
     const parts = ip.split('.');
     if (parts.length === 4) {
       return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
@@ -239,6 +244,11 @@ class ElasticsearchService {
    * Check if IP is internal (RFC 1918)
    */
   isInternalIp(ip) {
+    // Handle null/undefined IP
+    if (!ip || typeof ip !== 'string') {
+      return false;
+    }
+
     const parts = ip.split('.').map(Number);
     if (parts.length !== 4) return false;
 
@@ -419,27 +429,30 @@ class ElasticsearchService {
         }
       });
 
-      const connections = response.hits.hits.map(hit => ({
-        id: hit._id,
-        timestamp: hit._source['@timestamp'],
-        sourceIp: hit._source.id?.orig_h,
-        sourcePort: hit._source.id?.orig_p,
-        destIp: hit._source.id?.resp_h,
-        destPort: hit._source.id?.resp_p,
-        protocol: hit._source.proto,
-        service: hit._source.service,
-        duration: hit._source.duration,
-        origBytes: hit._source.orig_bytes || 0,
-        respBytes: hit._source.resp_bytes || 0,
-        origPackets: hit._source.orig_pkts || 0,
-        respPackets: hit._source.resp_pkts || 0,
-        connState: hit._source.conn_state,
-        localOrig: hit._source.local_orig,
-        localResp: hit._source.local_resp,
-        missedBytes: hit._source.missed_bytes || 0,
-        history: hit._source.history,
-        raw: hit._source
-      }));
+      const connections = response.hits.hits
+        .map(hit => ({
+          id: hit._id,
+          timestamp: hit._source['@timestamp'],
+          sourceIp: hit._source.id?.orig_h,
+          sourcePort: hit._source.id?.orig_p,
+          destIp: hit._source.id?.resp_h,
+          destPort: hit._source.id?.resp_p,
+          protocol: hit._source.proto,
+          service: hit._source.service,
+          duration: hit._source.duration,
+          origBytes: hit._source.orig_bytes || 0,
+          respBytes: hit._source.resp_bytes || 0,
+          origPackets: hit._source.orig_pkts || 0,
+          respPackets: hit._source.resp_pkts || 0,
+          connState: hit._source.conn_state,
+          localOrig: hit._source.local_orig,
+          localResp: hit._source.local_resp,
+          missedBytes: hit._source.missed_bytes || 0,
+          history: hit._source.history,
+          raw: hit._source
+        }))
+        // Filter out connections with missing IP addresses
+        .filter(conn => conn.sourceIp && conn.destIp);
 
       // Build nodes from individual connections
       const nodes = new Map();
