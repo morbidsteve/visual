@@ -113,6 +113,8 @@ class ElasticsearchService {
         }
       });
 
+      console.log(`[DEBUG] getNetworkTopology: ES returned ${response.hits.total.value} hits, ${response.aggregations?.connections?.buckets?.length || 0} connection buckets`);
+
       return this.formatTopologyData(response);
     } catch (error) {
       console.error('Error querying Elasticsearch:', error);
@@ -135,6 +137,8 @@ class ElasticsearchService {
 
     // Process connections
     const connections = esResponse.aggregations.connections.buckets;
+
+    console.log(`[DEBUG] formatTopologyData: Processing ${connections.length} connection buckets`);
 
     connections.forEach(bucket => {
       const sourceIp = bucket.key.source_ip;
@@ -229,6 +233,8 @@ class ElasticsearchService {
       }
       return true;
     });
+
+    console.log(`[DEBUG] formatTopologyData: Created ${nodes.size} nodes, ${edges.length} edges (${validEdges.length} valid)`);
 
     return {
       nodes: Array.from(nodes.values()),
