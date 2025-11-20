@@ -393,6 +393,23 @@ if [ $? -eq 0 ]; then
     echo -e "${YELLOW}To stop services:${NC}"
     echo -e "  ${BLUE}docker-compose -f docker-compose.dev.yml down${NC}"
     echo ""
+
+    # Ask if user wants to start the dev servers
+    echo ""
+    echo -e "${YELLOW}Would you like to start the backend and frontend servers now? (y/N)${NC}"
+    read -r -n 1 RESPONSE
+    echo ""
+
+    if [[ "$RESPONSE" =~ ^[Yy]$ ]]; then
+        echo ""
+        echo -e "${GREEN}Starting development servers...${NC}"
+        cd "$PROJECT_ROOT"
+        exec ./start-dev.sh
+    else
+        echo ""
+        echo -e "${CYAN}You can start the servers later with:${NC}"
+        echo -e "  ${BLUE}cd $PROJECT_ROOT && ./start-dev.sh${NC}"
+    fi
 else
     echo -e "${RED}✗ Setup failed${NC}"
     exit 1
