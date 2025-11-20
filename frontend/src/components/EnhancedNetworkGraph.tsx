@@ -157,14 +157,14 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
     const elements = createClusteredElements(nodes, edges, topology, strategy);
 
     // Frontend safety check: Validate edges reference existing nodes
-    const nodeIds = new Set(elements.filter(el => !el.data.source).map(el => el.data.id));
+    const nodeIds = new Set(elements.filter(el => !('source' in el.data)).map(el => el.data.id));
     const validElements = elements.filter(el => {
       // Keep all nodes
-      if (!el.data.source) return true;
+      if (!('source' in el.data)) return true;
 
       // For edges, check if source and target nodes exist
-      const hasSource = nodeIds.has(el.data.source);
-      const hasTarget = nodeIds.has(el.data.target);
+      const hasSource = nodeIds.has((el.data as any).source);
+      const hasTarget = nodeIds.has((el.data as any).target);
 
       if (!hasSource || !hasTarget) {
         console.warn(`Frontend filtered invalid edge ${el.data.id}: source=${hasSource}, target=${hasTarget}`);
