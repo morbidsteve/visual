@@ -346,7 +346,7 @@ echo -e "${GREEN}✓ Dependencies ready${NC}"
 echo ""
 
 # Set environment variables for local Elasticsearch
-export ES_URL=http://localhost:9200
+export ES_NODE=http://localhost:9200
 export ES_USERNAME=""
 export ES_PASSWORD=""
 

@@ -135,7 +135,7 @@ npm install
 # Create .env file
 cat > .env <<EOF
 # Elasticsearch Configuration
-ES_URL=https://your-elasticsearch:9200
+ES_NODE=https://your-elasticsearch:9200
 ES_USERNAME=elastic
 ES_PASSWORD=your-password
 ES_INDEX_PATTERN=zeek-*
@@ -225,7 +225,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - ES_URL=https://elasticsearch:9200
+      - ES_NODE=https://elasticsearch:9200
       - ES_USERNAME=elastic
       - ES_PASSWORD=${ES_PASSWORD}
       - VELOCIRAPTOR_URL=https://velociraptor:8000

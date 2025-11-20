@@ -86,6 +86,12 @@ echo ""
 # Start backend server
 echo -e "${CYAN}Starting backend on http://localhost:3001...${NC}"
 cd "$SCRIPT_DIR/backend"
+
+# Set environment variables for local Elasticsearch
+export ES_NODE=http://localhost:9200
+export ES_USERNAME=""
+export ES_PASSWORD=""
+
 npm start > "$SCRIPT_DIR/.backend.log" 2>&1 &
 BACKEND_PID=$!
 

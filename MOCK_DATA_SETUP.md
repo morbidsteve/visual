@@ -304,7 +304,7 @@ curl http://localhost:9200/_cluster/health
 Use your existing Elasticsearch instance. Configure in `.env`:
 
 ```bash
-ES_URL=https://your-elasticsearch:9200
+ES_NODE=https://your-elasticsearch:9200
 ES_USERNAME=your-username
 ES_PASSWORD=your-password
 # OR
@@ -407,7 +407,7 @@ cd backend
 
 # Make sure .env is configured
 cat > .env <<EOF
-ES_URL=http://localhost:9200
+ES_NODE=http://localhost:9200
 ES_INDEX_PATTERN=zeek-*
 PORT=3001
 NODE_ENV=development
@@ -751,7 +751,7 @@ jobs:
 ## FAQ
 
 **Q: Can I use existing Elasticsearch?**
-A: Yes, just configure `ES_URL` in `.env`. The scripts work with any Elasticsearch 7.x or 8.x.
+A: Yes, just configure `ES_NODE` in `.env`. The scripts work with any Elasticsearch 7.x or 8.x.
 
 **Q: How do I reset the data?**
 A: Run `./quickstart.sh [scale] [timeRange]` again. It deletes and recreates the index.

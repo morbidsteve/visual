@@ -20,7 +20,7 @@ require('dotenv').config();
 // Elasticsearch client configuration
 const getElasticsearchClient = () => {
   const config = {
-    node: process.env.ES_URL || 'http://localhost:9200'
+    node: process.env.ES_NODE || 'http://localhost:9200'
   };
 
   // Basic auth

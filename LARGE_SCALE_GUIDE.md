@@ -725,7 +725,7 @@ Stream millions of connections as NDJSON.
 ### Configuration
 
 - [ ] `ES_INDEX_PATTERN` set correctly
-- [ ] `ES_URL` points to cluster (not single node)
+- [ ] `ES_NODE` points to cluster (not single node)
 - [ ] Elasticsearch connection pooling enabled
 - [ ] Backend pagination defaults configured
 - [ ] Frontend column defaults set
