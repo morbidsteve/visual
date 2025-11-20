@@ -16,10 +16,23 @@ class ElasticsearchService {
 
     // Time range filter
     const hoursAgo = timeRange || this.dataWindowHours;
+
+    // Convert to appropriate time unit (Elasticsearch doesn't support fractional hours)
+    let timeFilter;
+    if (hoursAgo < 1) {
+      // Use minutes for sub-hour ranges
+      const minutesAgo = Math.max(1, Math.ceil(hoursAgo * 60));
+      timeFilter = `now-${minutesAgo}m`;
+    } else {
+      // Use hours for longer ranges
+      const wholeHours = Math.ceil(hoursAgo);
+      timeFilter = `now-${wholeHours}h`;
+    }
+
     must.push({
       range: {
         '@timestamp': {
-          gte: `now-${hoursAgo}h`,
+          gte: timeFilter,
           lte: 'now'
         }
       }
@@ -126,6 +139,12 @@ class ElasticsearchService {
     connections.forEach(bucket => {
       const sourceIp = bucket.key.source_ip;
       const destIp = bucket.key.dest_ip;
+
+      // Skip connections with missing or invalid IPs
+      if (!sourceIp || !destIp || typeof sourceIp !== 'string' || typeof destIp !== 'string') {
+        return;
+      }
+
       const destPort = bucket.key.dest_port;
       const protocol = bucket.key.protocol;
       const bytes = bucket.total_bytes.value;
