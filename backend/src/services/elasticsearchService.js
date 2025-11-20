@@ -484,6 +484,8 @@ class ElasticsearchService {
         }
       });
 
+      console.log(`[DEBUG] getIndividualConnections: ES returned ${response.hits.hits.length} hits out of ${response.hits.total.value} total`);
+
       const connections = response.hits.hits
         .map(hit => ({
           id: hit._id,
@@ -508,6 +510,8 @@ class ElasticsearchService {
         }))
         // Filter out connections with missing IP addresses
         .filter(conn => conn.sourceIp && conn.destIp);
+
+      console.log(`[DEBUG] getIndividualConnections: After filtering, ${connections.length} connections remain`);
 
       // Build nodes from individual connections
       const nodes = new Map();
