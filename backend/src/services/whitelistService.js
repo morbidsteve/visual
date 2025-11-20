@@ -90,6 +90,11 @@ class WhitelistService {
    * Helper: Check if IP is in subnet (simple CIDR check)
    */
   ipInSubnet(ip, subnet) {
+    // Handle null/undefined inputs
+    if (!ip || !subnet || typeof ip !== 'string' || typeof subnet !== 'string') {
+      return false;
+    }
+
     const [subnetIp, bits] = subnet.split('/');
     if (!bits) return ip === subnetIp;
 
@@ -104,6 +109,11 @@ class WhitelistService {
    * Convert IP to number for comparison
    */
   ipToNumber(ip) {
+    // Handle null/undefined IP
+    if (!ip || typeof ip !== 'string') {
+      return 0;
+    }
+
     return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
   }
 
