@@ -79,7 +79,7 @@ const AppContent: React.FC = () => {
   const [correlationPanelOpen, setCorrelationPanelOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'warning' | 'info' }>({
     open: false,
     message: '',
     severity: 'success'
@@ -115,8 +115,8 @@ const AppContent: React.FC = () => {
   };
 
   const connectionCount = view === 'graph'
-    ? (data?.edges?.length || 0)
-    : (data?.connections?.length || 0);
+    ? ((data as any)?.edges?.length || 0)
+    : ((data as any)?.connections?.length || 0);
 
   // Show notification when new anomalies detected
   React.useEffect(() => {
@@ -318,18 +318,18 @@ const AppContent: React.FC = () => {
           >
             {view === 'dashboard' ? (
               <Dashboard
-                data={data}
+                data={data as any}
                 loading={isLoading}
               />
             ) : view === 'timeline' ? (
               <TimelineView
-                connections={data?.connections || []}
+                connections={(data as any)?.connections || []}
                 loading={isLoading}
               />
             ) : view === 'graph' ? (
               <EnhancedNetworkGraph
-                nodes={data?.nodes || []}
-                edges={data?.edges || []}
+                nodes={(data as any)?.nodes || []}
+                edges={(data as any)?.edges || []}
                 loading={isLoading}
                 onNodeSelect={handleNodeSelect}
                 onEdgeSelect={handleEdgeSelect}
@@ -337,14 +337,14 @@ const AppContent: React.FC = () => {
               />
             ) : (
               // Auto-switch to virtualized list for large datasets (>10k connections)
-              (data?.connections?.length || 0) > 10000 || useVirtualizedList ? (
+              ((data as any)?.connections?.length || 0) > 10000 || useVirtualizedList ? (
                 <VirtualizedConnectionList
-                  connections={data?.connections || []}
+                  connections={(data as any)?.connections || []}
                   loading={isLoading}
                 />
               ) : (
                 <ConnectionListView
-                  connections={data?.connections || []}
+                  connections={(data as any)?.connections || []}
                   loading={isLoading}
                 />
               )
@@ -435,7 +435,10 @@ const AppContent: React.FC = () => {
       >
         <DialogTitle>Network Topology Configuration</DialogTitle>
         <DialogContent>
-          <TopologyManager />
+          <TopologyManager
+            open={topologyManagerOpen}
+            onClose={() => setTopologyManagerOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 

@@ -350,7 +350,7 @@ const ConnectionListView: React.FC<ConnectionListViewProps> = ({ connections, lo
                             {conn.anomalies.map((anomaly, idx) => (
                               <Alert
                                 key={idx}
-                                severity={anomaly.severity}
+                                severity={anomaly.severity === 'high' ? 'error' : anomaly.severity === 'medium' ? 'warning' : 'info'}
                                 icon={getSeverityIcon(anomaly.severity)}
                                 sx={{ mb: 1 }}
                               >

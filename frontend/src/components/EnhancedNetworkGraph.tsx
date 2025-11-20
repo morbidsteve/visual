@@ -146,10 +146,11 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
     const cy = cyRef.current;
 
     // Determine clustering strategy
-    let strategy: ClusterMode = clusterMode;
+    let strategy: 'none' | 'subnet' | 'collapsed' | 'aggregated' = 'subnet';
     if (clusterMode === 'auto') {
-      const autoStrategy = getClusteringStrategy(nodes.length);
-      strategy = autoStrategy;
+      strategy = getClusteringStrategy(nodes.length);
+    } else {
+      strategy = clusterMode as 'none' | 'subnet' | 'collapsed' | 'aggregated';
     }
 
     // Create clustered elements
@@ -394,18 +395,18 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
             orientation="vertical"
             size="small"
           >
-            <ToggleButton value="auto">
-              <Tooltip title="Auto (based on node count)">Auto</Tooltip>
-            </ToggleButton>
-            <ToggleButton value="none">
-              <Tooltip title="Show all nodes">None</Tooltip>
-            </ToggleButton>
-            <ToggleButton value="subnet">
-              <Tooltip title="Group by subnet">Subnet</Tooltip>
-            </ToggleButton>
-            <ToggleButton value="collapsed">
-              <Tooltip title="Collapse inactive subnets">Collapsed</Tooltip>
-            </ToggleButton>
+            <Tooltip title="Auto (based on node count)">
+              <ToggleButton value="auto">Auto</ToggleButton>
+            </Tooltip>
+            <Tooltip title="Show all nodes">
+              <ToggleButton value="none">None</ToggleButton>
+            </Tooltip>
+            <Tooltip title="Group by subnet">
+              <ToggleButton value="subnet">Subnet</ToggleButton>
+            </Tooltip>
+            <Tooltip title="Collapse inactive subnets">
+              <ToggleButton value="collapsed">Collapsed</ToggleButton>
+            </Tooltip>
           </ToggleButtonGroup>
         </Box>
 

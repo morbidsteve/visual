@@ -30,7 +30,7 @@ interface FilterRule {
   field: string;
   operator: string;
   value: string | number;
-  valueType: 'string' | 'number' | 'boolean' | 'ip' | 'port';
+  valueType: 'string' | 'number' | 'boolean' | 'ip' | 'port' | 'duration' | 'timestamp';
 }
 
 interface AdvancedFilterBuilderProps {
@@ -67,6 +67,21 @@ const OPERATORS = {
     { value: 'equals', label: '=' },
     { value: 'gt', label: '>' },
     { value: 'lt', label: '<' },
+    { value: 'between', label: 'Between' }
+  ],
+  duration: [
+    { value: 'equals', label: '=' },
+    { value: 'notEquals', label: '!=' },
+    { value: 'gt', label: '>' },
+    { value: 'gte', label: '>=' },
+    { value: 'lt', label: '<' },
+    { value: 'lte', label: '<=' },
+    { value: 'between', label: 'Between' }
+  ],
+  timestamp: [
+    { value: 'equals', label: '=' },
+    { value: 'gt', label: 'After' },
+    { value: 'lt', label: 'Before' },
     { value: 'between', label: 'Between' }
   ]
 };
