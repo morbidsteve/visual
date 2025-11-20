@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest"
+    "test": "jest",
+    "mock:small": "node scripts/setupMockElasticsearch.js small 1",
+    "mock:medium": "node scripts/setupMockElasticsearch.js medium 24",
+    "mock:large": "node scripts/setupMockElasticsearch.js large 24",
+    "mock:enterprise": "node scripts/setupMockElasticsearch.js enterprise 24",
+    "generate:data": "node scripts/generateMockData.js"
   },
   "keywords": ["soc", "network", "visualizer", "zeek", "elasticsearch"],
   "author": "",
