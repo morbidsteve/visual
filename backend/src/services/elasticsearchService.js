@@ -153,37 +153,53 @@ class ElasticsearchService {
       const services = bucket.services.buckets.map(b => b.key);
       const connStates = bucket.conn_states.buckets;
 
-      // Add source node
+      // Add source node with error handling
       if (!nodes.has(sourceIp)) {
-        nodes.set(sourceIp, {
-          id: sourceIp,
-          ip: sourceIp,
-          type: this.classifyNode(sourceIp),
-          subnet: this.getSubnet(sourceIp),
-          isInternal: this.isInternalIp(sourceIp),
-          totalBytesSent: 0,
-          totalBytesReceived: 0,
-          connections: 0
-        });
+        try {
+          nodes.set(sourceIp, {
+            id: sourceIp,
+            ip: sourceIp,
+            type: this.classifyNode(sourceIp),
+            subnet: this.getSubnet(sourceIp),
+            isInternal: this.isInternalIp(sourceIp),
+            totalBytesSent: 0,
+            totalBytesReceived: 0,
+            connections: 0
+          });
+        } catch (error) {
+          console.error(`Error creating source node for IP ${sourceIp}:`, error);
+          return; // Skip this connection if node creation fails
+        }
       }
-      nodes.get(sourceIp).totalBytesSent += bytes;
-      nodes.get(sourceIp).connections += connCount;
 
-      // Add destination node
-      if (!nodes.has(destIp)) {
-        nodes.set(destIp, {
-          id: destIp,
-          ip: destIp,
-          type: this.classifyNode(destIp, destPort, services),
-          subnet: this.getSubnet(destIp),
-          isInternal: this.isInternalIp(destIp),
-          totalBytesSent: 0,
-          totalBytesReceived: 0,
-          connections: 0
-        });
+      if (nodes.has(sourceIp)) {
+        nodes.get(sourceIp).totalBytesSent += bytes;
+        nodes.get(sourceIp).connections += connCount;
       }
-      nodes.get(destIp).totalBytesReceived += bytes;
-      nodes.get(destIp).connections += connCount;
+
+      // Add destination node with error handling
+      if (!nodes.has(destIp)) {
+        try {
+          nodes.set(destIp, {
+            id: destIp,
+            ip: destIp,
+            type: this.classifyNode(destIp, destPort, services),
+            subnet: this.getSubnet(destIp),
+            isInternal: this.isInternalIp(destIp),
+            totalBytesSent: 0,
+            totalBytesReceived: 0,
+            connections: 0
+          });
+        } catch (error) {
+          console.error(`Error creating dest node for IP ${destIp}:`, error);
+          return; // Skip this connection if node creation fails
+        }
+      }
+
+      if (nodes.has(destIp)) {
+        nodes.get(destIp).totalBytesReceived += bytes;
+        nodes.get(destIp).connections += connCount;
+      }
 
       // Add edge
       edges.push({
@@ -200,9 +216,23 @@ class ElasticsearchService {
       });
     });
 
+    // Final validation: filter out edges that reference non-existent nodes
+    // This catches any edge cases where node creation failed but edge was added
+    const nodeIds = new Set(nodes.keys());
+    const validEdges = edges.filter(edge => {
+      const hasSource = nodeIds.has(edge.source);
+      const hasTarget = nodeIds.has(edge.target);
+
+      if (!hasSource || !hasTarget) {
+        console.warn(`Filtered edge ${edge.id}: source=${hasSource}, target=${hasTarget}`);
+        return false;
+      }
+      return true;
+    });
+
     return {
       nodes: Array.from(nodes.values()),
-      edges,
+      edges: validEdges,
       stats
     };
   }
