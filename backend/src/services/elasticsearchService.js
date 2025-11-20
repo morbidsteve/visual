@@ -75,7 +75,7 @@ class ElasticsearchService {
               aggs: {
                 total_bytes: { sum: { field: 'orig_bytes' } },
                 total_packets: { sum: { field: 'orig_pkts' } },
-                conn_count: { value_count: { field: '_id' } },
+                conn_count: { value_count: { field: 'proto' } },
                 services: { terms: { field: 'service', size: 10 } },
                 conn_states: { terms: { field: 'conn_state', size: 20 } }
               }
@@ -192,6 +192,11 @@ class ElasticsearchService {
    * Classify node type based on IP and behavior
    */
   classifyNode(ip, port = null, services = []) {
+    // Handle null/undefined IP
+    if (!ip || typeof ip !== 'string') {
+      return 'unknown';
+    }
+
     // Router/Gateway detection (common gateway IPs)
     if (ip.endsWith('.1') || ip.endsWith('.254')) {
       return 'router';
@@ -333,10 +338,23 @@ class ElasticsearchService {
 
     // Time range filter
     const hoursAgo = timeRange || this.dataWindowHours;
+
+    // Convert to appropriate time unit (Elasticsearch doesn't support fractional hours)
+    let timeFilter;
+    if (hoursAgo < 1) {
+      // Use minutes for sub-hour ranges
+      const minutesAgo = Math.max(1, Math.ceil(hoursAgo * 60));
+      timeFilter = `now-${minutesAgo}m`;
+    } else {
+      // Use hours for longer ranges
+      const wholeHours = Math.ceil(hoursAgo);
+      timeFilter = `now-${wholeHours}h`;
+    }
+
     must.push({
       range: {
         '@timestamp': {
-          gte: `now-${hoursAgo}h`,
+          gte: timeFilter,
           lte: 'now'
         }
       }
