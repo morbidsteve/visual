@@ -145,16 +145,27 @@ The fastest way to get started is using our automated quickstart script with moc
 git clone <repository-url>
 cd visual
 
-# Run the quickstart script
-# This will:
-# - Validate all dependencies
-# - Start Elasticsearch and Kibana
-# - Generate and load realistic mock data
+# 1. Run the quickstart script to set up Elasticsearch with mock data
 cd backend/scripts
 ./quickstart.sh medium  # Options: small, medium, large, enterprise
+
+# 2. Start both backend and frontend with one command
+cd ../..
+./start-dev.sh
+
+# 3. Open http://localhost:3000
 ```
 
-The script will guide you through installation if any dependencies are missing.
+The quickstart script will:
+- Validate all dependencies (and show installation instructions if needed)
+- Start Elasticsearch and Kibana in Docker
+- Generate and load realistic mock network traffic data
+
+The development script will:
+- Start the backend API server (port 3001)
+- Start the frontend development server (port 3000)
+- Display logs from both services
+- Gracefully shut down both with Ctrl+C
 
 See [MOCK_DATA_SETUP.md](MOCK_DATA_SETUP.md) for detailed information about mock data scales and features.
 

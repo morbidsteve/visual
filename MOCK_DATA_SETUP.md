@@ -101,11 +101,19 @@ The fastest way to get started:
 
 ```bash
 # From project root
+
+# 1. Set up Elasticsearch with mock data
 cd backend/scripts
 ./quickstart.sh medium 24
+
+# 2. Start both backend and frontend
+cd ../..
+./start-dev.sh
+
+# 3. Open http://localhost:3000 in your browser
 ```
 
-**The script will automatically:**
+**The quickstart script will automatically:**
 1. ✓ Check all required dependencies (Node.js, npm, Docker, docker-compose, curl)
 2. ✓ Provide installation instructions for any missing dependencies
 3. ✓ Verify Docker daemon is running
@@ -115,7 +123,14 @@ cd backend/scripts
 7. ✓ Load all data into Elasticsearch
 8. ✓ Verify the data
 
-**Time**: ~5-10 minutes depending on scale
+**The development script will:**
+- Start the backend API server (http://localhost:3001)
+- Start the frontend React app (http://localhost:3000)
+- Auto-install dependencies if needed
+- Show logs from both services
+- Allow you to stop both with Ctrl+C
+
+**Time**: ~5-10 minutes for setup, then instant startup
 
 **If Dependencies Are Missing:**
 The script will detect and show exactly what's needed:
