@@ -88,7 +88,7 @@ const OPERATORS = {
 
 const AdvancedFilterBuilder: React.FC<AdvancedFilterBuilderProps> = ({ onApplyFilters, currentFilters }) => {
   const [rules, setRules] = useState<FilterRule[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string>('network');
+  const [_activeCategory, _setActiveCategory] = useState<string>('network');
 
   const addRule = (fieldName?: string) => {
     const field = fieldName ? ZEEK_FIELDS.find(f => f.name === fieldName) : ZEEK_FIELDS[0];
@@ -301,8 +301,8 @@ const AdvancedFilterBuilder: React.FC<AdvancedFilterBuilderProps> = ({ onApplyFi
             Active Rules ({rules.length})
           </Typography>
           {rules.map((rule) => {
-            const field = ZEEK_FIELDS.find(f => f.name === rule.field);
-            const operator = getOperatorsForField(rule.field).find(o => o.value === rule.operator);
+            const _field = ZEEK_FIELDS.find(f => f.name === rule.field);
+            const _operator = getOperatorsForField(rule.field).find(o => o.value === rule.operator);
 
             return (
               <Box

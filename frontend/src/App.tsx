@@ -12,7 +12,6 @@ import {
   Snackbar,
   Tabs,
   Tab,
-  Button,
   ToggleButtonGroup,
   ToggleButton,
   Chip,
@@ -72,13 +71,13 @@ const AppContent: React.FC = () => {
   const [selectedEdge, setSelectedEdge] = useState<NetworkEdge | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerContent, setDrawerContent] = useState<'whitelist' | 'baseline' | 'threats' | 'advanced-filters'>('whitelist');
-  const [useVirtualizedList, setUseVirtualizedList] = useState(false);
+  const [useVirtualizedList, _setUseVirtualizedList] = useState(false);
   const [savedFiltersOpen, setSavedFiltersOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [topologyManagerOpen, setTopologyManagerOpen] = useState(false);
   const [correlationPanelOpen, setCorrelationPanelOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
-  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+  const [_appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'warning' | 'info' }>({
     open: false,
     message: '',
@@ -95,10 +94,10 @@ const AppContent: React.FC = () => {
   // WebSocket for real-time updates
   const {
     connected: wsConnected,
-    newConnections: wsNewConnections,
+    newConnections: _wsNewConnections,
     anomalies: wsAnomalies,
     connectionCount: wsConnectionCount,
-    clearNewConnections,
+    clearNewConnections: _clearNewConnections,
     clearAnomalies
   } = useWebSocket();
 
@@ -134,6 +133,7 @@ const AppContent: React.FC = () => {
       // Auto-clear after showing notification
       setTimeout(() => clearAnomalies(), 5000);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wsAnomalies.length, wsConnected, clearAnomalies]);
 
   // Show notification when new connections arrive (if count is significant)

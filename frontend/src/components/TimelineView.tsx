@@ -15,10 +15,7 @@ import {
   ToggleButton
 } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Error';
-import InfoIcon from '@mui/icons-material/Info';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import type { Connection } from '../types/network';
 
 interface TimelineViewProps {
@@ -134,6 +131,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ connections, loading }) => 
     return { isBeaconing: false, confidence: 'low' };
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const beaconingDetection = useMemo(() => detectBeaconing(), [timeSlots]);
 
   const getSlotColor = (slot: TimeSlot): string => {

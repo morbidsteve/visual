@@ -16,9 +16,7 @@ import {
 import {
   TrendingUp,
   Warning,
-  Security,
   Speed,
-  Public,
   Computer,
   Router
 } from '@mui/icons-material';
@@ -47,7 +45,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, loading }) => {
 
   // Calculate additional metrics
   const totalTraffic = connections.reduce((sum, c) => sum + c.origBytes + c.respBytes, 0);
-  const avgConnectionSize = connections.length > 0 ? totalTraffic / connections.length : 0;
+  const _avgConnectionSize = connections.length > 0 ? totalTraffic / connections.length : 0;
 
   // Protocol breakdown
   const protocolCounts = connections.reduce((acc, c) => {
@@ -82,7 +80,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, loading }) => {
     .slice(0, 5);
 
   // Anomaly severity breakdown
-  const severityCounts = anomalies.reduce((acc, a) => {
+  const _severityCounts = anomalies.reduce((acc, a) => {
     const severity = a.anomalies?.[0]?.severity || 'low';
     acc[severity] = (acc[severity] || 0) + 1;
     return acc;

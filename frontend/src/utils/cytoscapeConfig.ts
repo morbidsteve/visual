@@ -1,4 +1,3 @@
-import cytoscape from 'cytoscape';
 import type { NetworkNode, NetworkEdge } from '../types/network';
 
 // Node colors based on type

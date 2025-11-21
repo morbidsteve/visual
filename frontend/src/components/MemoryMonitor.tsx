@@ -62,9 +62,10 @@ const MemoryMonitor: React.FC<MemoryMonitorProps> = ({ connectionCount, onClearR
   }, [warningDismissed]);
 
   // Reset warning dismissal when connection count changes significantly
+  const connectionCountThousands = Math.floor(connectionCount / 1000);
   useEffect(() => {
     setWarningDismissed(false);
-  }, [Math.floor(connectionCount / 1000)]);
+  }, [connectionCountThousands]);
 
   const formatBytes = (bytes: number): string => {
     const mb = bytes / (1024 * 1024);

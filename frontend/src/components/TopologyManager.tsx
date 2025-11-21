@@ -25,13 +25,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Tooltip,
   Card,
   CardContent
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SaveIcon from '@mui/icons-material/Save';
 import RouterIcon from '@mui/icons-material/Router';
@@ -78,8 +76,8 @@ const TopologyManager: React.FC<TopologyManagerProps> = ({ open, onClose, onTopo
   const [activeTab, setActiveTab] = useState(0);
   const [subnets, setSubnets] = useState<Subnet[]>(DEFAULT_SUBNETS);
   const [hostGroups, setHostGroups] = useState<HostGroup[]>([]);
-  const [editingSubnet, setEditingSubnet] = useState<Subnet | null>(null);
-  const [editingGroup, setEditingGroup] = useState<HostGroup | null>(null);
+  const [_editingSubnet, _setEditingSubnet] = useState<Subnet | null>(null);
+  const [_editingGroup, _setEditingGroup] = useState<HostGroup | null>(null);
   const [newSubnet, setNewSubnet] = useState<Partial<Subnet>>({});
   const [newGroup, setNewGroup] = useState<Partial<HostGroup>>({});
 

@@ -12,9 +12,7 @@ import {
   Chip,
   Menu,
   MenuItem,
-  Divider,
-  Card,
-  CardContent
+  Divider
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
@@ -56,6 +54,7 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
+  const isDestroyedRef = useRef<boolean>(false);
   const [topology, setTopology] = useState<TopologyConfig>(loadTopologyConfig());
   const [clusterMode, setClusterMode] = useState<ClusterMode>('auto');
   const [layoutType, setLayoutType] = useState<LayoutType>('cose');
@@ -76,6 +75,9 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
   // Initialize Cytoscape
   useEffect(() => {
     if (!containerRef.current) return;
+
+    // Reset destroyed flag when creating new instance
+    isDestroyedRef.current = false;
 
     const cy = cytoscape({
       container: containerRef.current,
@@ -135,13 +137,16 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
     });
 
     return () => {
+      isDestroyedRef.current = true;
       cy.destroy();
+      cyRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update graph when data or clustering changes
   useEffect(() => {
-    if (!cyRef.current || loading) return;
+    if (!cyRef.current || loading || isDestroyedRef.current) return;
 
     const cy = cyRef.current;
 
@@ -184,10 +189,12 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
       return;
     }
 
-    // Update graph
+    // Update graph using batch to avoid race conditions with mouse events
     try {
-      cy.elements().remove();
-      cy.add(validElements);
+      cy.batch(() => {
+        cy.elements().remove();
+        cy.add(validElements);
+      });
     } catch (error) {
       console.error('[DEBUG] Error adding elements to Cytoscape:', error);
       return;
@@ -224,7 +231,7 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
   };
 
   const toggleSubnetCollapse = (subnetId: string) => {
-    if (!cyRef.current) return;
+    if (!cyRef.current || isDestroyedRef.current) return;
 
     const cy = cyRef.current;
     const parent = cy.getElementById(subnetId);
@@ -253,7 +260,7 @@ const EnhancedNetworkGraph: React.FC<EnhancedNetworkGraphProps> = ({
   };
 
   const runLayout = (type: LayoutType) => {
-    if (!cyRef.current) return;
+    if (!cyRef.current || isDestroyedRef.current) return;
 
     const cy = cyRef.current;
 

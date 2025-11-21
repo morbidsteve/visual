@@ -486,28 +486,77 @@ class ElasticsearchService {
 
       console.log(`[DEBUG] getIndividualConnections: ES returned ${response.hits.hits.length} hits out of ${response.hits.total.value} total`);
 
+      // Debug: Log first hit to see actual field structure
+      if (response.hits.hits.length > 0) {
+        const firstHit = response.hits.hits[0]._source;
+        console.log(`[DEBUG] First hit fields:`, JSON.stringify(Object.keys(firstHit), null, 2));
+        console.log(`[DEBUG] First hit id.orig_h (flat):`, firstHit['id.orig_h']);
+        console.log(`[DEBUG] First hit id.resp_h (flat):`, firstHit['id.resp_h']);
+        console.log(`[DEBUG] First hit id (nested):`, JSON.stringify(firstHit.id, null, 2));
+        console.log(`[DEBUG] First hit source.ip:`, firstHit['source.ip'] || firstHit.source?.ip);
+        console.log(`[DEBUG] First hit destination.ip:`, firstHit['destination.ip'] || firstHit.destination?.ip);
+      }
+
       const connections = response.hits.hits
-        .map(hit => ({
-          id: hit._id,
-          timestamp: hit._source['@timestamp'],
-          sourceIp: hit._source.id?.orig_h,
-          sourcePort: hit._source.id?.orig_p,
-          destIp: hit._source.id?.resp_h,
-          destPort: hit._source.id?.resp_p,
-          protocol: hit._source.proto,
-          service: hit._source.service,
-          duration: hit._source.duration,
-          origBytes: hit._source.orig_bytes || 0,
-          respBytes: hit._source.resp_bytes || 0,
-          origPackets: hit._source.orig_pkts || 0,
-          respPackets: hit._source.resp_pkts || 0,
-          connState: hit._source.conn_state,
-          localOrig: hit._source.local_orig,
-          localResp: hit._source.local_resp,
-          missedBytes: hit._source.missed_bytes || 0,
-          history: hit._source.history,
-          raw: hit._source
-        }))
+        .map(hit => {
+          const src = hit._source;
+          // Try multiple field paths to support different Zeek/ECS formats
+          // Note: Elasticsearch flat fields like 'id.orig_h' need bracket notation
+          const sourceIp = src['id.orig_h']  // Flat field with dot in name
+            || src.id?.orig_h                 // Nested object structure
+            || src['source.ip']
+            || src.source?.ip
+            || src.zeek?.connection?.id?.orig_h
+            || src.src_ip
+            || src.srcip;
+          const destIp = src['id.resp_h']    // Flat field with dot in name
+            || src.id?.resp_h                 // Nested object structure
+            || src['destination.ip']
+            || src.destination?.ip
+            || src.zeek?.connection?.id?.resp_h
+            || src.dst_ip
+            || src.dstip;
+          const sourcePort = src['id.orig_p'] // Flat field with dot in name
+            || src.id?.orig_p                  // Nested object structure
+            || src['source.port']
+            || src.source?.port
+            || src.zeek?.connection?.id?.orig_p
+            || src.src_port
+            || src.srcport;
+          const destPort = src['id.resp_p']   // Flat field with dot in name
+            || src.id?.resp_p                  // Nested object structure
+            || src['destination.port']
+            || src.destination?.port
+            || src.zeek?.connection?.id?.resp_p
+            || src.dst_port
+            || src.dstport;
+          const protocol = src.proto
+            || src['network.transport']
+            || src.network?.transport
+            || src.zeek?.connection?.proto;
+
+          return {
+            id: hit._id,
+            timestamp: src['@timestamp'],
+            sourceIp,
+            sourcePort,
+            destIp,
+            destPort,
+            protocol,
+            service: src.service || src.zeek?.connection?.service,
+            duration: src.duration || src.zeek?.connection?.duration,
+            origBytes: src.orig_bytes || src.zeek?.connection?.orig_bytes || src['source.bytes'] || src.source?.bytes || 0,
+            respBytes: src.resp_bytes || src.zeek?.connection?.resp_bytes || src['destination.bytes'] || src.destination?.bytes || 0,
+            origPackets: src.orig_pkts || src.zeek?.connection?.orig_pkts || src['source.packets'] || src.source?.packets || 0,
+            respPackets: src.resp_pkts || src.zeek?.connection?.resp_pkts || src['destination.packets'] || src.destination?.packets || 0,
+            connState: src.conn_state || src.zeek?.connection?.conn_state,
+            localOrig: src.local_orig || src.zeek?.connection?.local_orig,
+            localResp: src.local_resp || src.zeek?.connection?.local_resp,
+            missedBytes: src.missed_bytes || src.zeek?.connection?.missed_bytes || 0,
+            history: src.history || src.zeek?.connection?.history,
+            raw: src
+          };
+        })
         // Filter out connections with missing IP addresses
         .filter(conn => conn.sourceIp && conn.destIp);
 
